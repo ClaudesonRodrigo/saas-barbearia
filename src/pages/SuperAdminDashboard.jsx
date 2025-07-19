@@ -1,5 +1,8 @@
-// src/pages/SuperAdminDashboard.jsx
+// src/pages/SuperAdminDashboard.jsx (VERSÃO FINAL)
+
 import React, { useState } from 'react';
+// Importamos nossa nova função de serviço
+import { createBarbershop } from '../services/barbershopService';
 
 const SuperAdminDashboard = () => {
   const [shopName, setShopName] = useState('');
@@ -15,12 +18,23 @@ const SuperAdminDashboard = () => {
     setMessage('');
     setError('');
 
-    // AQUI VAI A LÓGICA PARA CHAMAR NOSSA NETLIFY FUNCTION
-    console.log({ shopName, ownerEmail, ownerPassword });
-    setError("Função de cadastro ainda não implementada."); // Mensagem temporária
-    // FIM DA LÓGICA
-    
-    setIsLoading(false);
+    try {
+      // AQUI ESTÁ A MÁGICA: Chamamos nossa função de serviço com os dados do formulário
+      const result = await createBarbershop({ shopName, ownerEmail, ownerPassword });
+      
+      setMessage(result.message); // Exibe a mensagem de sucesso do backend
+
+      // Limpa o formulário após o sucesso
+      setShopName('');
+      setOwnerEmail('');
+      setOwnerPassword('');
+
+    } catch (err) {
+      // Se o serviço lançar um erro, nós o capturamos e exibimos
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
