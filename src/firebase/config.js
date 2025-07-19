@@ -1,13 +1,18 @@
-// src/firebase/config.js (VERSÃO CORRIGIDA)
+// src/firebase/config.js (VERSÃO CORRIGIDA E SEGURA)
 
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
+// Agora o objeto de configuração lê as variáveis de ambiente
 const firebaseConfig = {
-  apiKey: "AIza...",
-  authDomain: "saas-barbearia-2e845.firebaseapp.com",
-  // ... resto das suas chaves
+  apiKey: process.env.REACT_APP_API_KEY,
+  authDomain: process.env.REACT_APP_AUTH_DOMAIN,
+  projectId: process.env.REACT_APP_PROJECT_ID,
+  storageBucket: process.env.REACT_APP_STORAGE_BUCKET,
+  messagingSenderId: process.env.REACT_APP_MESSAGING_SENDER_ID,
+  appId: process.env.REACT_APP_APP_ID,
+  measurementId: process.env.REACT_APP_MEASUREMENT_ID
 };
 
 const app = initializeApp(firebaseConfig);
