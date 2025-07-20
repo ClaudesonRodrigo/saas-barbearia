@@ -16,6 +16,12 @@ const authAdmin = getAuth();
 const db = getFirestore();
 
 exports.handler = async function(event, context) {
+
+    console.log("--- INÍCIO DO DEBUG DA FUNÇÃO ---");
+    console.log("Variável de ambiente FIREBASE_SERVICE_ACCOUNT está definida?", !!process.env.FIREBASE_SERVICE_ACCOUNT);
+    console.log("Tipo do event.body:", typeof event.body);
+    console.log("Conteúdo do event.body:", event.body);
+    console.log("--- FIM DO DEBUG DA FUNÇÃO ---");
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }

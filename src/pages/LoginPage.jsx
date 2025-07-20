@@ -14,25 +14,38 @@ const LoginPage = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  // Função que é chamada quando o formulário é enviado
-  const handleSubmit = async (e) => {
-    e.preventDefault(); // Impede que a página recarregue
+ // Dentro do componente LoginPage.jsx
+
+const handleSubmit = async (e) => {
+    e.preventDefault();
 
     try {
-      setError(''); // Limpa erros antigos
-      setLoading(true); // Ativa o estado de carregamento (para o botão)
-      await login(email, password);
-      // Se o login for bem-sucedido, o onAuthStateChanged do nosso context
-      // vai detectar o usuário e o PrivateRoute fará o resto.
-      // Apenas navegamos para a rota que queremos acessar.
-      navigate('/super-admin'); 
+      setError('');
+      setLoading(true);
+
+      // A função login retorna o 'UserCredential'
+      const userCredential = await login(email, password);
+
+      // A partir do userCredential, podemos pegar o token e as permissões (claims)
+      const idTokenResult = await userCredential.user.getIdTokenResult(true);
+      const userRole = idTokenResult.claims.role;
+
+      // Agora, redirecionamos com base na role
+      if (userRole === 'superAdmin') {
+        navigate('/super-admin');
+      } else if (userRole === 'shopOwner') {
+        navigate('/dashboard');
+      } else {
+        // Se não tiver uma role definida, vai para a página inicial
+        navigate('/');
+      }
+
     } catch (err) {
-      // Se o Firebase retornar um erro (senha errada, usuário não existe)
       setError('Falha ao fazer login. Verifique seu e-mail e senha.');
       console.error(err);
     }
 
-    setLoading(false); // Desativa o estado de carregamento
+    setLoading(false);
   };
 
   return (
