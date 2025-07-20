@@ -1,25 +1,28 @@
-// src/pages/ShopOwnerDashboard.jsx (VERSÃO CORRIGIDA E COMPLETA)
+// src/pages/ShopOwnerDashboard.jsx (VERSÃO FINAL COM CRUD COMPLETO)
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { createService, getServices } from '../services/shopService';
+// Importamos TODAS as funções do nosso serviço
+import { createService, getServices, deleteService, updateService } from '../services/shopService';
 
 const ShopOwnerDashboard = () => {
-  // --- Estados para o formulário ---
+  // --- Estados para o formulário (agora multi-uso) ---
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [duration, setDuration] = useState('');
+  
+  // --- Estados para controle da edição ---
+  const [editingService, setEditingService] = useState(null); // Guarda o serviço que estamos editando
+
+  // --- Outros estados de UI ---
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  
-  // --- Estados para a lista de serviços ---
   const [services, setServices] = useState([]);
   const [isLoadingServices, setIsLoadingServices] = useState(true);
 
   const { currentUser } = useAuth();
 
-  // Função para buscar os serviços, agora "memorizada" com useCallback
   const fetchServices = useCallback(async () => {
     if (!currentUser) return;
     
@@ -35,12 +38,29 @@ const ShopOwnerDashboard = () => {
     }
   }, [currentUser]);
   
-  // useEffect agora depende da função "memorizada" fetchServices
   useEffect(() => {
     fetchServices();
   }, [fetchServices]);
 
-  // Lógica para enviar o formulário
+  // --- Lógica de Edição ---
+  const handleEditClick = (service) => {
+    setEditingService(service); // Define qual serviço estamos editando
+    // Preenche o formulário com os dados atuais do serviço
+    setName(service.name);
+    setPrice(service.price);
+    setDuration(service.duration);
+    window.scrollTo(0, 0); // Rola a página para o topo para ver o formulário
+  };
+
+  const cancelEdit = () => {
+    setEditingService(null); // Limpa o estado de edição
+    // Limpa o formulário
+    setName('');
+    setPrice('');
+    setDuration('');
+  };
+
+  // --- Lógica de Submissão (Criar ou Atualizar) ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -50,14 +70,19 @@ const ShopOwnerDashboard = () => {
     try {
       const token = await currentUser.getIdToken();
       const serviceData = { name, price, duration };
-      const result = await createService(serviceData, token);
 
-      setMessage(result.message);
-      setName('');
-      setPrice('');
-      setDuration('');
+      if (editingService) {
+        // Se estamos editando, chamamos a função de UPDATE
+        await updateService(editingService.id, serviceData, token);
+        setMessage("Serviço atualizado com sucesso!");
+      } else {
+        // Se não, chamamos a função de CREATE
+        await createService(serviceData, token);
+        setMessage("Serviço criado com sucesso!");
+      }
       
-      fetchServices(); 
+      cancelEdit(); // Limpa o formulário e o modo de edição
+      fetchServices(); // Atualiza a lista na tela
 
     } catch (err) {
       setError(err.message);
@@ -66,13 +91,36 @@ const ShopOwnerDashboard = () => {
     }
   };
 
+  // --- Lógica para Deletar ---
+  const handleDelete = async (serviceId) => {
+    if (!window.confirm("Tem certeza que deseja excluir este serviço?")) {
+      return;
+    }
+
+    try {
+      setMessage('');
+      setError('');
+      const token = await currentUser.getIdToken();
+      await deleteService(serviceId, token);
+      
+      fetchServices();
+      setMessage("Serviço deletado com sucesso!");
+
+    } catch (err)      {
+      setError(err.message);
+    }
+  };
+
   return (
     <div>
       <h1>Painel do Dono da Barbearia</h1>
       <p>Bem-vindo! Aqui você gerenciará seus serviços.</p>
+      
       <hr />
+
       <section>
-        <h2>Adicionar Novo Serviço</h2>
+        {/* O TÍTULO DO FORMULÁRIO MUDA DE ACORDO COM A AÇÃO */}
+        <h2>{editingService ? 'Editar Serviço' : 'Adicionar Novo Serviço'}</h2>
         <form onSubmit={handleSubmit}>
           <div>
             <label>Nome do Serviço:</label>
@@ -105,9 +153,17 @@ const ShopOwnerDashboard = () => {
               required 
             />
           </div>
+          
+          {/* O TEXTO DO BOTÃO MUDA E ADICIONAMOS UM BOTÃO DE CANCELAR */}
           <button type="submit" disabled={isLoading}>
-            {isLoading ? 'Adicionando...' : 'Adicionar Serviço'}
+            {isLoading ? 'Salvando...' : (editingService ? 'Salvar Alterações' : 'Adicionar Serviço')}
           </button>
+          
+          {editingService && (
+            <button type="button" onClick={cancelEdit} disabled={isLoading} style={{ marginLeft: '10px' }}>
+              Cancelar
+            </button>
+          )}
         </form>
         {message && <p style={{ color: 'green' }}>{message}</p>}
         {error && <p style={{ color: 'red' }}>{error}</p>}
@@ -126,6 +182,14 @@ const ShopOwnerDashboard = () => {
             {services.map(service => (
               <li key={service.id}>
                 <strong>{service.name}</strong> - R$ {Number(service.price).toFixed(2)} - {service.duration} min
+                
+                {/* BOTÕES DE AÇÃO PARA CADA ITEM */}
+                <button onClick={() => handleEditClick(service)} style={{ marginLeft: '10px' }}>
+                  Editar
+                </button>
+                <button onClick={() => handleDelete(service.id)} style={{ marginLeft: '10px' }}>
+                  Excluir
+                </button>
               </li>
             ))}
           </ul>
