@@ -1,6 +1,6 @@
-// src/pages/ShopOwnerDashboard.jsx (VERSÃO FINAL E COMPLETA)
+// src/pages/ShopOwnerDashboard.jsx (VERSÃO CORRIGIDA E COMPLETA)
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { createService, getServices } from '../services/shopService';
 
@@ -19,8 +19,8 @@ const ShopOwnerDashboard = () => {
 
   const { currentUser } = useAuth();
 
-  // Função para buscar os serviços no backend
-  const fetchServices = async () => {
+  // Função para buscar os serviços, agora "memorizada" com useCallback
+  const fetchServices = useCallback(async () => {
     if (!currentUser) return;
     
     setIsLoadingServices(true);
@@ -33,12 +33,12 @@ const ShopOwnerDashboard = () => {
     } finally {
       setIsLoadingServices(false);
     }
-  };
+  }, [currentUser]);
   
-  // Roda a busca de serviços uma vez quando o componente carrega
+  // useEffect agora depende da função "memorizada" fetchServices
   useEffect(() => {
     fetchServices();
-  }, [currentUser]);
+  }, [fetchServices]);
 
   // Lógica para enviar o formulário
   const handleSubmit = async (e) => {
@@ -74,7 +74,6 @@ const ShopOwnerDashboard = () => {
       <section>
         <h2>Adicionar Novo Serviço</h2>
         <form onSubmit={handleSubmit}>
-          {/* --- CÓDIGO DO FORMULÁRIO COMPLETO --- */}
           <div>
             <label>Nome do Serviço:</label>
             <input 
@@ -109,7 +108,6 @@ const ShopOwnerDashboard = () => {
           <button type="submit" disabled={isLoading}>
             {isLoading ? 'Adicionando...' : 'Adicionar Serviço'}
           </button>
-          {/* --- FIM DO FORMULÁRIO --- */}
         </form>
         {message && <p style={{ color: 'green' }}>{message}</p>}
         {error && <p style={{ color: 'red' }}>{error}</p>}
