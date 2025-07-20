@@ -7,6 +7,7 @@ import { useAuth } from './contexts/AuthContext';
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import ShopOwnerDashboard from './pages/ShopOwnerDashboard';
 import LoginPage from './pages/LoginPage';
+import BookingPage from './pages/BookingPage';
 
 // O "porteiro" que protege as rotas
 const PrivateRoute = ({ allowedRoles }) => {
@@ -24,6 +25,7 @@ function App() {
         {/* Rotas Públicas */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/" element={<h1>Página Inicial Pública</h1>} />
+        <Route path="/agendar/:slug" element={<BookingPage />} />
 
         {/* Rota Protegida do Super Admin */}
         <Route element={<PrivateRoute allowedRoles={['superAdmin']} />}>
