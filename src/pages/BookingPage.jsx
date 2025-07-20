@@ -3,11 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { getPublicBarbershopData, getAvailableSlots } from '../services/publicService';
+// Importaremos a nova função para criar o agendamento em breve
 
 const BookingPage = () => {
   const { slug } = useParams(); 
   
-  // Estados para os dados da barbearia
   const [barbershopData, setBarbershopData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -17,24 +17,20 @@ const BookingPage = () => {
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedSlot, setSelectedSlot] = useState(null);
 
-  // Novos estados para os horários disponíveis
+  // Estados para os horários disponíveis
   const [availableSlots, setAvailableSlots] = useState([]);
   const [isLoadingSlots, setIsLoadingSlots] = useState(false);
+  
+  // --- NOVOS ESTADOS PARA O FORMULÁRIO DE CONFIRMAÇÃO ---
+  const [clientName, setClientName] = useState('');
+  const [clientEmail, setClientEmail] = useState('');
+  const [isBooking, setIsBooking] = useState(false);
+  const [bookingSuccess, setBookingSuccess] = useState('');
 
   // Funções para lidar com as seleções do cliente
-  const handleServiceSelect = (service) => {
-    setSelectedService(service);
-    setSelectedSlot(null); // Reseta o horário ao trocar de serviço
-  };
-
-  const handleDateChange = (event) => {
-    setSelectedDate(event.target.value);
-    setSelectedSlot(null); // Reseta o horário ao trocar de data
-  };
-  
-  const handleSlotSelect = (slot) => {
-    setSelectedSlot(slot);
-  };
+  const handleServiceSelect = (service) => { setSelectedService(service); setSelectedSlot(null); };
+  const handleDateChange = (event) => { setSelectedDate(event.target.value); setSelectedSlot(null); };
+  const handleSlotSelect = (slot) => { setSelectedSlot(slot); };
 
   // Efeito para buscar os dados iniciais da barbearia
   useEffect(() => {
@@ -44,13 +40,8 @@ const BookingPage = () => {
           const data = await getPublicBarbershopData(slug);
           setBarbershopData(data);
         }
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
+      } catch (err) { setError(err.message); } finally { setLoading(false); }
     };
-
     fetchData();
   }, [slug]);
 
@@ -64,52 +55,74 @@ const BookingPage = () => {
         try {
           const slots = await getAvailableSlots(slug, selectedDate, selectedService.duration);
           setAvailableSlots(slots);
-        } catch (err) {
-          setError(err.message);
-        } finally {
-          setIsLoadingSlots(false);
-        }
+        } catch (err) { setError(err.message); } finally { setIsLoadingSlots(false); }
       };
       fetchSlots();
     }
   }, [selectedService, selectedDate, slug]);
 
-  if (loading) {
-    return <h1>Carregando informações da barbearia...</h1>;
-  }
+  // --- NOVA FUNÇÃO PARA CONFIRMAR O AGENDAMENTO ---
+  const handleBookingSubmit = async (e) => {
+    e.preventDefault();
+    setIsBooking(true);
+    setError('');
+    setBookingSuccess('');
 
-  if (error) {
-    return <h1 style={{ color: 'red' }}>Erro: {error}</h1>;
-  }
+    try {
+      // Aqui chamaremos a futura função de serviço createAppointment
+      console.log("Enviando agendamento:", {
+        barbershopId: barbershopData.shop.id,
+        serviceId: selectedService.id,
+        date: selectedDate,
+        slot: selectedSlot,
+        clientName,
+        clientEmail,
+      });
 
-  if (!barbershopData) {
-    return <h1>Barbearia não encontrada.</h1>;
-  }
+      // Simulação de sucesso
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setBookingSuccess(`Parabéns, ${clientName}! Seu horário foi confirmado. Um e-mail de confirmação foi enviado para ${clientEmail}.`);
+      
+      // Limpa tudo após o sucesso
+      setSelectedService(null);
+      setSelectedDate('');
+      setSelectedSlot(null);
+      setClientName('');
+      setClientEmail('');
+
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsBooking(false);
+    }
+  };
+
+  if (loading) return <h1>Carregando informações da barbearia...</h1>;
+  if (error) return <h1 style={{ color: 'red' }}>Erro: {error}</h1>;
+  if (!barbershopData) return <h1>Barbearia não encontrada.</h1>;
 
   const { shop, services, barbers } = barbershopData;
+
+  // Se o agendamento foi um sucesso, mostra apenas a mensagem de sucesso
+  if (bookingSuccess) {
+    return (
+      <div>
+        <h1>Agendamento Confirmado!</h1>
+        <p style={{ color: 'green' }}>{bookingSuccess}</p>
+      </div>
+    );
+  }
 
   return (
     <div>
       <h1>{shop.name}</h1>
       <p>Bem-vindo! Siga os passos abaixo para agendar seu horário.</p>
-
       <hr />
-
       <section>
         <h2>Passo 1: Escolha o seu serviço</h2>
         <div>
           {services.map(service => (
-            <button 
-              key={service.id} 
-              onClick={() => handleServiceSelect(service)}
-              style={{ 
-                margin: '5px', 
-                padding: '10px',
-                cursor: 'pointer',
-                border: selectedService?.id === service.id ? '2px solid #007bff' : '1px solid #ccc',
-                borderRadius: '5px'
-              }}
-            >
+            <button key={service.id} onClick={() => handleServiceSelect(service)} style={{ margin: '5px', padding: '10px', cursor: 'pointer', border: selectedService?.id === service.id ? '2px solid #007bff' : '1px solid #ccc', borderRadius: '5px' }}>
               <strong>{service.name}</strong> <br />
               R$ {Number(service.price).toFixed(2)} ({service.duration} min)
             </button>
@@ -122,12 +135,7 @@ const BookingPage = () => {
       {selectedService && (
         <section>
           <h2>Passo 2: Escolha a data</h2>
-          <input 
-            type="date"
-            onChange={handleDateChange}
-            value={selectedDate}
-            style={{ padding: '8px', fontSize: '1rem' }}
-          />
+          <input type="date" onChange={handleDateChange} value={selectedDate} style={{ padding: '8px', fontSize: '1rem' }} />
         </section>
       )}
 
@@ -140,17 +148,7 @@ const BookingPage = () => {
             availableSlots.length > 0 ? (
               <div>
                 {availableSlots.map(slot => (
-                  <button 
-                    key={slot} 
-                    onClick={() => handleSlotSelect(slot)}
-                    style={{ 
-                      margin: '5px',
-                      padding: '10px',
-                      cursor: 'pointer',
-                      border: selectedSlot === slot ? '2px solid #007bff' : '1px solid #ccc',
-                      borderRadius: '5px'
-                    }}
-                  >
+                  <button key={slot} onClick={() => handleSlotSelect(slot)} style={{ margin: '5px', padding: '10px', cursor: 'pointer', border: selectedSlot === slot ? '2px solid #007bff' : '1px solid #ccc', borderRadius: '5px' }}>
                     {slot}
                   </button>
                 ))}
@@ -160,17 +158,40 @@ const BookingPage = () => {
         </section>
       )}
 
+      <hr />
+      
       {selectedSlot && (
         <section>
-          <hr />
-          <h2>Passo 4: Confirmar Agendamento</h2>
+          <h2>Passo 4: Seus Dados</h2>
           <p>
-            Você selecionou o serviço <strong>{selectedService.name}</strong> no dia <strong>{new Date(selectedDate).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</strong> às <strong>{selectedSlot}</strong>.
+            Agendando <strong>{selectedService.name}</strong> para <strong>{new Date(selectedDate).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</strong> às <strong>{selectedSlot}</strong>.
           </p>
-          {/* Aqui entrará o formulário para nome, email e o botão de confirmar */}
-          <p>O formulário de confirmação aparecerá aqui no próximo passo.</p>
+          <form onSubmit={handleBookingSubmit}>
+            <div>
+              <label>Seu Nome:</label>
+              <input type="text" value={clientName} onChange={(e) => setClientName(e.target.value)} required />
+            </div>
+            <div>
+              <label>Seu E-mail:</label>
+              <input type="email" value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} required />
+            </div>
+            <button type="submit" disabled={isBooking}>
+              {isBooking ? 'Confirmando...' : 'Confirmar Agendamento'}
+            </button>
+          </form>
         </section>
       )}
+
+      {/* A seção da equipe pode ficar no final */}
+      <hr />
+      <section>
+        <h2>Nossa Equipe</h2>
+        <ul>
+          {barbers.map(barber => (
+            <li key={barber.id}>{barber.name}</li>
+          ))}
+        </ul>
+      </section>
     </div>
   );
 };
