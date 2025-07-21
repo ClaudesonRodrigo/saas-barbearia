@@ -2,7 +2,7 @@
 
 const GET_SHOP_ENDPOINT = '/.netlify/functions/get-public-barbershop-data';
 const GET_SLOTS_ENDPOINT = '/.netlify/functions/get-available-slots';
-
+const CREATE_APPOINTMENT_ENDPOINT = '/.netlify/functions/create-appointment';
 export const getPublicBarbershopData = async (slug) => {
   try {
     // O slug (ex: "barbearia-do-ze") é adicionado na URL
@@ -35,6 +35,29 @@ export const getAvailableSlots = async (slug, date, duration) => {
 
   } catch (error) {
     console.error("Erro no serviço getAvailableSlots:", error);
+    throw error;
+  }
+};
+export const createAppointment = async (appointmentData) => {
+  try {
+    const response = await fetch(CREATE_APPOINTMENT_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(appointmentData),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Falha ao confirmar o agendamento.');
+    }
+
+    return data;
+
+  } catch (error) {
+    console.error("Erro no serviço createAppointment:", error);
     throw error;
   }
 };
