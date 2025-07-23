@@ -3,10 +3,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 
-// Importe o novo componente Navbar
 import Navbar from './components/Navbar';
-
-// Importe as páginas
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import ShopOwnerDashboard from './pages/ShopOwnerDashboard';
 import BarberDashboard from './pages/BarberDashboard';
@@ -16,6 +13,7 @@ import ShopSettingsPage from './pages/ShopSettingsPage';
 import RegisterPage from './pages/RegisterPage';
 import ClientDashboard from './pages/ClientDashboard';
 import BarbershopListPage from './pages/BarbershopListPage';
+import PlansPage from './pages/PlansPage'; // Nova importação
 
 const PrivateRoute = ({ allowedRoles }) => {
   const { currentUser, userRole, loading } = useAuth();
@@ -25,13 +23,12 @@ const PrivateRoute = ({ allowedRoles }) => {
   return <Outlet />;
 };
 
-// Um componente de Layout para organizar a página
 const Layout = () => {
   return (
     <>
       <Navbar />
       <main style={{ padding: '2rem' }}>
-        <Outlet /> {/* Aqui é onde as nossas páginas serão renderizadas */}
+        <Outlet />
       </main>
     </>
   );
@@ -40,7 +37,6 @@ const Layout = () => {
 function App() {
   return (
     <BrowserRouter>
-      {/* O Layout com a Navbar agora envolve todas as rotas */}
       <Routes>
         <Route element={<Layout />}>
           {/* Rotas Públicas */}
@@ -58,6 +54,7 @@ function App() {
           <Route element={<PrivateRoute allowedRoles={['shopOwner']} />}>
             <Route path="/dashboard" element={<ShopOwnerDashboard />} />
             <Route path="/dashboard/settings" element={<ShopSettingsPage />} />
+            <Route path="/planos" element={<PlansPage />} /> {/* Nova rota */}
           </Route>
 
           <Route element={<PrivateRoute allowedRoles={['barber']} />}>
