@@ -29,7 +29,7 @@ exports.handler = async function(event, context) {
     const serviceDuration = parseInt(duration);
     
     // 1. Buscamos a barbearia e as suas configurações
-    const shopsRef = db.collection('barbearshops');
+    const shopsRef = db.collection('barbershops'); // CORREÇÃO AQUI
     const shopQuery = await shopsRef.where('publicUrlSlug', '==', slug).limit(1).get();
     if (shopQuery.empty) {
       return { statusCode: 404, body: JSON.stringify({ message: "Barbearia não encontrada." }) };
