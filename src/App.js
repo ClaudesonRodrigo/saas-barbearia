@@ -1,76 +1,51 @@
-// src/pages/BarberDashboard.jsx
-
-import React, { useState, useEffect, useCallback } from 'react';
+// src/App.js
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
-import { getBarberAppointments } from './services/barberService';
-import ShopSettingsPage from './pages/ShopSettingsPage';
 
-const BarberDashboard = () => {
-  const getTodayString = () => new Date().toISOString().split('T')[0];
-  const [selectedDate, setSelectedDate] = useState(getTodayString());
-  const [appointments, setAppointments] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  
-  const { currentUser } = useAuth();
+// Importe as páginas
+import SuperAdminDashboard from './pages/SuperAdminDashboard';
+import ShopOwnerDashboard from './pages/ShopOwnerDashboard';
+import BarberDashboard from './pages/BarberDashboard';
+import LoginPage from './pages/LoginPage';
+import BookingPage from './pages/BookingPage';
+import ShopSettingsPage from './pages/ShopSettingsPage'; // A importação que já tinha
 
-  const fetchAppointments = useCallback(async (date) => {
-    if (!currentUser) return;
-    setIsLoading(true);
-    setError('');
-    try {
-      const token = await currentUser.getIdToken();
-      const data = await getBarberAppointments(date, token);
-      setAppointments(data);
-    } catch (err) {
-      setError(err.message);
-      setAppointments([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [currentUser]);
-
-  useEffect(() => {
-    fetchAppointments(selectedDate);
-  }, [selectedDate, fetchAppointments]);
-
-  const handleDateChange = (e) => {
-    setSelectedDate(e.target.value);
-  };
-
-  return (
-    <div>
-      <h1>Minha Agenda</h1>
-      <p>Bem-vindo, {currentUser?.displayName}! Aqui estão os seus agendamentos.</p>
-      
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-
-      <hr style={{ margin: '20px 0' }} />
-
-      <section>
-        <div>
-          <label htmlFor="agenda-date" style={{ marginRight: '10px' }}>Ver agendamentos para o dia:</label>
-          <input id="agenda-date" type="date" value={selectedDate} onChange={handleDateChange} />
-        </div>
-
-        <div style={{ marginTop: '20px' }}>
-          {isLoading ? <p>A carregar agenda...</p> : 
-            appointments.length === 0 ? <p>Nenhum agendamento para este dia.</p> : (
-              <ul style={{ listStyle: 'none', padding: 0 }}>
-                {appointments.map(app => (
-                  <li key={app.id} style={{ border: '1px solid #ccc', borderRadius: '5px', padding: '10px', margin: '10px 0' }}>
-                    <strong>{app.time}</strong> - {app.clientName}
-                    <br />
-                    <span>Serviço: {app.serviceName} ({app.serviceDuration} min)</span>
-                  </li>
-                ))}
-              </ul>
-            )
-          }
-        </div>
-      </section>
-    </div>
-  );
+const PrivateRoute = ({ allowedRoles }) => {
+  const { currentUser, userRole, loading } = useAuth();
+  if (loading) return <h1>A carregar...</h1>;
+  if (!currentUser) return <Navigate to="/login" />;
+  if (allowedRoles && !allowedRoles.includes(userRole)) return <Navigate to="/" />;
+  return <Outlet />;
 };
 
-export default BarberDashboard;
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        {/* Rotas Públicas */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/agendar/:slug" element={<BookingPage />} />
+        <Route path="/" element={<h1>Página Inicial Pública</h1>} />
+
+        {/* Rotas Protegidas */}
+        <Route element={<PrivateRoute allowedRoles={['superAdmin']} />}>
+          <Route path="/super-admin" element={<SuperAdminDashboard />} />
+        </Route>
+        
+        <Route element={<PrivateRoute allowedRoles={['shopOwner']} />}>
+          <Route path="/dashboard" element={<ShopOwnerDashboard />} />
+          {/* 👇 A ROTA QUE FALTAVA 👇 */}
+          <Route path="/dashboard/settings" element={<ShopSettingsPage />} />
+        </Route>
+
+        <Route element={<PrivateRoute allowedRoles={['barber']} />}>
+          <Route path="/minha-agenda" element={<BarberDashboard />} />
+        </Route>
+
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+export default App;
