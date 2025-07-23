@@ -13,7 +13,9 @@ const BookingPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // Estados para o processo de agendamento
   const [selectedService, setSelectedService] = useState(null);
+  const [selectedBarber, setSelectedBarber] = useState(null); // Novo estado
   const [selectedDate, setSelectedDate] = useState(getTodayString());
   const [selectedSlot, setSelectedSlot] = useState(null);
 
@@ -25,7 +27,8 @@ const BookingPage = () => {
   const [isBooking, setIsBooking] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState('');
   
-  const handleServiceSelect = (service) => { setSelectedService(service); setSelectedSlot(null); };
+  const handleServiceSelect = (service) => { setSelectedService(service); setSelectedBarber(null); setSelectedSlot(null); };
+  const handleBarberSelect = (barber) => { setSelectedBarber(barber); setSelectedSlot(null); };
   const handleDateChange = (event) => { setSelectedDate(event.target.value); setSelectedSlot(null); };
   const handleSlotSelect = (slot) => { setSelectedSlot(slot); };
 
@@ -42,13 +45,14 @@ const BookingPage = () => {
   }, [slug]);
 
   useEffect(() => {
-    if (selectedService && selectedDate && new Date(selectedDate) >= new Date(getTodayString())) {
+    // A busca de horários agora depende também do barbeiro
+    if (selectedService && selectedDate && selectedBarber) {
       const fetchSlots = async () => {
         setIsLoadingSlots(true);
         setAvailableSlots([]);
         setError('');
         try {
-          const slots = await getAvailableSlots(slug, selectedDate, selectedService.duration);
+          const slots = await getAvailableSlots(slug, selectedDate, selectedService.duration, selectedBarber.id);
           setAvailableSlots(slots);
         } catch (err) { setError(err.message); } finally { setIsLoadingSlots(false); }
       };
@@ -56,7 +60,7 @@ const BookingPage = () => {
     } else {
       setAvailableSlots([]);
     }
-  }, [selectedService, selectedDate, slug]);
+  }, [selectedService, selectedDate, selectedBarber, slug]);
 
   const handleBookingSubmit = async (e) => {
     e.preventDefault();
@@ -64,37 +68,29 @@ const BookingPage = () => {
     setError('');
     setBookingSuccess('');
     try {
-      // Montamos o objeto completo com todos os dados necessários para o back-end
       const appointmentData = {
         barbershopId: barbershopData.shop.id,
         serviceId: selectedService.id,
         serviceName: selectedService.name,
         serviceDuration: selectedService.duration,
+        barberId: selectedBarber.id, // Enviamos o ID do barbeiro
         date: selectedDate,
         slot: selectedSlot,
         clientName,
         clientEmail,
       };
-
-      // Chamamos a função de serviço real
       await createAppointment(appointmentData);
-
-      setBookingSuccess(`Parabéns, ${clientName}! Seu horário para ${selectedService.name} foi confirmado. Um e-mail de confirmação foi enviado para ${clientEmail}.`);
-      
+      setBookingSuccess(`Parabéns, ${clientName}! O seu horário com ${selectedBarber.name} foi confirmado.`);
       setSelectedService(null);
+      setSelectedBarber(null);
       setSelectedDate(getTodayString());
       setSelectedSlot(null);
       setClientName('');
       setClientEmail('');
-
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setIsBooking(false);
-    }
+    } catch (err) { setError(err.message); } finally { setIsBooking(false); }
   };
 
-  if (loading) return <h1>Carregando...</h1>;
+  if (loading) return <h1>A carregar...</h1>;
   if (error && !bookingSuccess) return <h1 style={{ color: 'red' }}>Erro: {error}</h1>;
   if (!barbershopData) return <h1>Barbearia não encontrada.</h1>;
 
@@ -112,7 +108,7 @@ const BookingPage = () => {
   return (
     <div>
       <h1>{shop.name}</h1>
-      <p>Bem-vindo! Siga os passos abaixo para agendar seu horário.</p>
+      <p>Siga os passos abaixo para agendar o seu horário.</p>
       <hr />
       <section>
         <h2>Passo 1: Escolha o seu serviço</h2>
@@ -130,23 +126,31 @@ const BookingPage = () => {
 
       {selectedService && (
         <section>
-          <h2>Passo 2: Escolha a data</h2>
-          <input 
-            type="date"
-            onChange={handleDateChange}
-            value={selectedDate}
-            min={getTodayString()}
-            style={{ padding: '8px', fontSize: '1rem' }}
-          />
+          <h2>Passo 2: Escolha o seu profissional</h2>
+          <div>
+            {barbers.map(barber => (
+              <button key={barber.id} onClick={() => handleBarberSelect(barber)} style={{ margin: '5px', padding: '10px', cursor: 'pointer', border: selectedBarber?.id === barber.id ? '2px solid #007bff' : '1px solid #ccc', borderRadius: '5px' }}>
+                {barber.name}
+              </button>
+            ))}
+          </div>
         </section>
       )}
 
       <hr />
-      
-      {selectedService && selectedDate && (
+
+      {selectedBarber && (
         <section>
-          <h2>Passo 3: Escolha o horário</h2>
-          {isLoadingSlots ? <p>Buscando horários disponíveis...</p> : 
+          <h2>Passo 3: Escolha a data</h2>
+          <input type="date" onChange={handleDateChange} value={selectedDate} min={getTodayString()} style={{ padding: '8px', fontSize: '1rem' }} />
+        </section>
+      )}
+      
+      {selectedDate && selectedBarber && selectedService && (
+        <section>
+          <hr />
+          <h2>Passo 4: Escolha o horário</h2>
+          {isLoadingSlots ? <p>A procurar horários disponíveis...</p> : 
             availableSlots.length > 0 ? (
               <div>
                 {availableSlots.map(slot => (
@@ -155,44 +159,25 @@ const BookingPage = () => {
                   </button>
                 ))}
               </div>
-            ) : <p>Nenhum horário disponível para este dia. Por favor, escolha outra data.</p>
+            ) : <p>Nenhum horário disponível para este profissional neste dia. Por favor, escolha outra data ou profissional.</p>
           }
         </section>
       )}
-
-      <hr />
       
       {selectedSlot && (
         <section>
-          <h2>Passo 4: Seus Dados</h2>
+          <hr />
+          <h2>Passo 5: Os seus Dados</h2>
           <p>
-            Agendando <strong>{selectedService.name}</strong> para <strong>{new Date(selectedDate).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</strong> às <strong>{selectedSlot}</strong>.
+            A agendar <strong>{selectedService.name}</strong> com <strong>{selectedBarber.name}</strong> para <strong>{new Date(selectedDate).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</strong> às <strong>{selectedSlot}</strong>.
           </p>
           <form onSubmit={handleBookingSubmit}>
-            <div>
-              <label>Seu Nome:</label>
-              <input type="text" value={clientName} onChange={(e) => setClientName(e.target.value)} required />
-            </div>
-            <div>
-              <label>Seu E-mail:</label>
-              <input type="email" value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} required />
-            </div>
-            <button type="submit" disabled={isBooking}>
-              {isBooking ? 'Confirmando...' : 'Confirmar Agendamento'}
-            </button>
+            <div><label>O seu Nome:</label><input type="text" value={clientName} onChange={(e) => setClientName(e.target.value)} required /></div>
+            <div><label>O seu E-mail:</label><input type="email" value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} required /></div>
+            <button type="submit" disabled={isBooking}>{isBooking ? 'A confirmar...' : 'Confirmar Agendamento'}</button>
           </form>
         </section>
       )}
-
-      <hr />
-      <section>
-        <h2>Nossa Equipe</h2>
-        <ul>
-          {barbers.map(barber => (
-            <li key={barber.id}>{barber.name}</li>
-          ))}
-        </ul>
-      </section>
     </div>
   );
 };

@@ -22,14 +22,14 @@ exports.handler = async function(event, context) {
   }
 
   try {
-    const { slug, date, duration } = event.queryStringParameters;
+    // 1. Pegamos os parâmetros, incluindo o novo 'barberId' (que pode ser opcional)
+    const { slug, date, duration, barberId } = event.queryStringParameters;
     if (!slug || !date || !duration) {
       return { statusCode: 400, body: JSON.stringify({ message: "Dados insuficientes." }) };
     }
     const serviceDuration = parseInt(duration);
     
-    // 1. Buscamos a barbearia e as suas configurações
-    const shopsRef = db.collection('barbershops'); // CORREÇÃO AQUI
+    const shopsRef = db.collection('barbershops');
     const shopQuery = await shopsRef.where('publicUrlSlug', '==', slug).limit(1).get();
     if (shopQuery.empty) {
       return { statusCode: 404, body: JSON.stringify({ message: "Barbearia não encontrada." }) };
@@ -38,19 +38,23 @@ exports.handler = async function(event, context) {
     const barbershopId = shopDoc.id;
     const shopData = shopDoc.data();
 
-    // 2. Usamos os horários guardados no banco de dados. Se não existirem, usamos valores padrão.
     const dailyBusinessHours = shopData.businessHours || { start: '09:00', end: '18:00' };
     const lunchBreak = shopData.lunchBreak || { start: '12:00', end: '13:00' };
 
-    // 3. Buscamos os agendamentos existentes para o dia
+    // 2. A busca de agendamentos agora pode ser filtrada por barbeiro
     const selectedDayStart = fromZonedTime(`${date}T00:00:00`, TIME_ZONE);
     const selectedDayEnd = fromZonedTime(`${date}T23:59:59`, TIME_ZONE);
 
-    const appointmentsRef = db.collection('barbershops').doc(barbershopId).collection('appointments');
-    const appointmentsSnapshot = await appointmentsRef
+    let appointmentsQuery = db.collection('barbershops').doc(barbershopId).collection('appointments')
       .where('date', '>=', selectedDayStart)
-      .where('date', '<=', selectedDayEnd)
-      .get();
+      .where('date', '<=', selectedDayEnd);
+
+    // Se um barbeiro específico foi escolhido, adicionamos o filtro
+    if (barberId) {
+      appointmentsQuery = appointmentsQuery.where('barberId', '==', barberId);
+    }
+    
+    const appointmentsSnapshot = await appointmentsQuery.get();
       
     const bookedSlots = [];
     appointmentsSnapshot.forEach(doc => {
@@ -59,7 +63,7 @@ exports.handler = async function(event, context) {
       bookedSlots.push({ start: zonedDate, duration: bookingData.serviceDuration || 30 });
     });
 
-    // 4. Geramos os horários disponíveis usando os horários dinâmicos
+    // 3. A geração de horários continua a mesma, mas agora com os agendamentos filtrados
     const availableSlots = [];
     let currentTime = fromZonedTime(`${date}T${dailyBusinessHours.start}`, TIME_ZONE);
     const dayEnd = fromZonedTime(`${date}T${dailyBusinessHours.end}`, TIME_ZONE);
