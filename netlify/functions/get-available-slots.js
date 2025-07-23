@@ -13,13 +13,14 @@ if (getApps().length === 0) {
 }
 const db = getFirestore();
 
-// --- REGRAS DE NEGÓCIO ---
-const dailyBusinessHours = { start: { hour: 9, minute: 0 }, end: { hour: 18, minute: 0 } };
-const lunchBreak = { start: { hour: 12, minute: 0 }, end: { hour: 13, minute: 0 } };
-const slotInterval = 30;
 const TIME_ZONE = 'America/Sao_Paulo';
+const slotInterval = 30; // Intervalo de 30 minutos entre os horários
 
 exports.handler = async function(event, context) {
+  if (event.httpMethod !== 'GET') {
+    return { statusCode: 405, body: 'Method Not Allowed' };
+  }
+
   try {
     const { slug, date, duration } = event.queryStringParameters;
     if (!slug || !date || !duration) {
@@ -27,13 +28,21 @@ exports.handler = async function(event, context) {
     }
     const serviceDuration = parseInt(duration);
     
-    const shopsRef = db.collection('barbershops');
+    // 1. Buscamos a barbearia e as suas configurações
+    const shopsRef = db.collection('barbearshops');
     const shopQuery = await shopsRef.where('publicUrlSlug', '==', slug).limit(1).get();
     if (shopQuery.empty) {
       return { statusCode: 404, body: JSON.stringify({ message: "Barbearia não encontrada." }) };
     }
-    const barbershopId = shopQuery.docs[0].id;
+    const shopDoc = shopQuery.docs[0];
+    const barbershopId = shopDoc.id;
+    const shopData = shopDoc.data();
 
+    // 2. Usamos os horários guardados no banco de dados. Se não existirem, usamos valores padrão.
+    const dailyBusinessHours = shopData.businessHours || { start: '09:00', end: '18:00' };
+    const lunchBreak = shopData.lunchBreak || { start: '12:00', end: '13:00' };
+
+    // 3. Buscamos os agendamentos existentes para o dia
     const selectedDayStart = fromZonedTime(`${date}T00:00:00`, TIME_ZONE);
     const selectedDayEnd = fromZonedTime(`${date}T23:59:59`, TIME_ZONE);
 
@@ -47,26 +56,19 @@ exports.handler = async function(event, context) {
     appointmentsSnapshot.forEach(doc => {
       const bookingData = doc.data();
       const zonedDate = toZonedTime(bookingData.date.toDate(), TIME_ZONE);
-      bookedSlots.push({ start: zonedDate, duration: bookingData.serviceDuration || 30 }); // Adicionamos a duração
+      bookedSlots.push({ start: zonedDate, duration: bookingData.serviceDuration || 30 });
     });
 
+    // 4. Geramos os horários disponíveis usando os horários dinâmicos
     const availableSlots = [];
-    // --- CORREÇÃO PRINCIPAL AQUI ---
-    // Construímos a data base e depois aplicamos horas/minutos
-    let currentTime = fromZonedTime(date, TIME_ZONE);
-    currentTime.setHours(dailyBusinessHours.start.hour, dailyBusinessHours.start.minute, 0, 0);
-
-    let dayEnd = fromZonedTime(date, TIME_ZONE);
-    dayEnd.setHours(dailyBusinessHours.end.hour, dailyBusinessHours.end.minute, 0, 0);
+    let currentTime = fromZonedTime(`${date}T${dailyBusinessHours.start}`, TIME_ZONE);
+    const dayEnd = fromZonedTime(`${date}T${dailyBusinessHours.end}`, TIME_ZONE);
+    const lunchStart = fromZonedTime(`${date}T${lunchBreak.start}`, TIME_ZONE);
+    const lunchEnd = fromZonedTime(`${date}T${lunchBreak.end}`, TIME_ZONE);
 
     while (currentTime < dayEnd) {
       const slotStart = currentTime;
       const slotEnd = new Date(slotStart.getTime() + serviceDuration * 60000);
-      
-      const lunchStart = fromZonedTime(date, TIME_ZONE);
-      lunchStart.setHours(lunchBreak.start.hour, lunchBreak.start.minute, 0, 0);
-      const lunchEnd = fromZonedTime(date, TIME_ZONE);
-      lunchEnd.setHours(lunchBreak.end.hour, lunchBreak.end.minute, 0, 0);
       
       const isDuringLunch = slotStart < lunchEnd && slotEnd > lunchStart;
       const isAfterWork = slotEnd > dayEnd;
