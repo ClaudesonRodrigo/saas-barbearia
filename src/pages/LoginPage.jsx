@@ -1,6 +1,6 @@
 // src/pages/LoginPage.jsx
 import React, { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext'; // Nosso hook para acessar a função de login
+import { useAuth } from '../contexts/AuthContext'; // O nosso hook para aceder à função de login
 import { useNavigate } from 'react-router-dom'; // Para redirecionar após o login
 
 const LoginPage = () => {
@@ -10,23 +10,21 @@ const LoginPage = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Pegando a função de login do nosso Contexto
+  // A obter a função de login do nosso Contexto
   const { login } = useAuth();
   const navigate = useNavigate();
 
- // Dentro do componente LoginPage.jsx
-
-const handleSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
       setError('');
       setLoading(true);
 
-      // A função login retorna o 'UserCredential'
+      // A função login devolve o 'UserCredential'
       const userCredential = await login(email, password);
 
-      // A partir do userCredential, podemos pegar o token e as permissões (claims)
+      // A partir do userCredential, podemos obter o token e as permissões (claims)
       const idTokenResult = await userCredential.user.getIdTokenResult(true);
       const userRole = idTokenResult.claims.role;
 
@@ -35,13 +33,15 @@ const handleSubmit = async (e) => {
         navigate('/super-admin');
       } else if (userRole === 'shopOwner') {
         navigate('/dashboard');
+      } else if (userRole === 'barber') { // 👈 LÓGICA ADICIONADA PARA O BARBEIRO
+        navigate('/minha-agenda');
       } else {
         // Se não tiver uma role definida, vai para a página inicial
         navigate('/');
       }
 
     } catch (err) {
-      setError('Falha ao fazer login. Verifique seu e-mail e senha.');
+      setError('Falha ao fazer login. Verifique o seu e-mail e senha.');
       console.error(err);
     }
 
@@ -73,9 +73,9 @@ const handleSubmit = async (e) => {
             required
           />
         </div>
-        {/* O botão fica desabilitado enquanto a requisição está em andamento */}
+        {/* O botão fica desativado enquanto o pedido está em andamento */}
         <button disabled={loading} type="submit">
-          {loading ? 'Entrando...' : 'Entrar'}
+          {loading ? 'A entrar...' : 'Entrar'}
         </button>
       </form>
     </div>

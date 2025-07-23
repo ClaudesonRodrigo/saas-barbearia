@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 // Importamos a nova função para buscar a agenda
 import { createService, getServices, deleteService, updateService, getDailyAppointments, cancelAppointment } from '../services/shopService';
 import { createBarber, getBarbers, deleteBarber, updateBarber } from '../services/barberService';
+import { Link } from 'react-router-dom';
 
 const ShopOwnerDashboard = () => {
   // --- Estados para SERVIÇOS ---
@@ -143,6 +144,9 @@ const ShopOwnerDashboard = () => {
   return (
     <div>
       <h1>Painel do Dono da Barbearia</h1>
+      <Link to="/dashboard/settings" style={{ display: 'inline-block', marginBottom: '20px' }}>
+        Ir para Configurações da Loja ⚙️
+      </Link>
       <p>Bem-vindo! Gerencie sua agenda, serviços e barbeiros.</p>
       
       {message && <p style={{ color: 'green', marginTop: '20px', fontWeight: 'bold' }}>{message}</p>}

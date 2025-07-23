@@ -5,7 +5,9 @@ const GET_SERVICES_ENDPOINT = '/.netlify/functions/get-services';
 const UPDATE_SERVICE_ENDPOINT = '/.netlify/functions/update-service';
 const DELETE_SERVICE_ENDPOINT = '/.netlify/functions/delete-service';
 const GET_APPOINTMENTS_ENDPOINT = '/.netlify/functions/get-daily-appointments';
-const CANCEL_APPOINTMENT_ENDPOINT = '/.netlify/functions/cancel-appointment'; // Novo endpoint
+const CANCEL_APPOINTMENT_ENDPOINT = '/.netlify/functions/cancel-appointment';
+const GET_SETTINGS_ENDPOINT = '/.netlify/functions/get-shop-settings'; // Novo endpoint
+const UPDATE_SETTINGS_ENDPOINT = '/.netlify/functions/update-shop-settings'; // Novo endpoint
 
 export const createService = async (serviceData, token) => {
   try {
@@ -128,7 +130,6 @@ export const getDailyAppointments = async (date, token) => {
   }
 };
 
-// 👇 NOVA FUNÇÃO ADICIONADA 👇
 export const cancelAppointment = async (appointmentId, token) => {
   try {
     const response = await fetch(`${CANCEL_APPOINTMENT_ENDPOINT}/${appointmentId}`, {
@@ -144,6 +145,48 @@ export const cancelAppointment = async (appointmentId, token) => {
     return data;
   } catch (error) {
     console.error("Erro no serviço cancelAppointment:", error);
+    throw error;
+  }
+};
+
+// 👇 NOVAS FUNÇÕES ADICIONADAS 👇
+
+export const getShopSettings = async (token) => {
+  try {
+    const response = await fetch(GET_SETTINGS_ENDPOINT, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Falha ao buscar as configurações.');
+    }
+    return data;
+  } catch (error) {
+    console.error("Erro no serviço getShopSettings:", error);
+    throw error;
+  }
+};
+
+export const updateShopSettings = async (settingsData, token) => {
+  try {
+    const response = await fetch(UPDATE_SETTINGS_ENDPOINT, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(settingsData),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Falha ao atualizar as configurações.');
+    }
+    return data;
+  } catch (error) {
+    console.error("Erro no serviço updateShopSettings:", error);
     throw error;
   }
 };

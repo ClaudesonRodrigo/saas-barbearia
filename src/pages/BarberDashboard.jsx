@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './contexts/AuthContext';
-import { getBarberAppointments } from './services/barberService';
-import ShopSettingsPage from './pages/ShopSettingsPage';
+import { getBarberAppointments } from '../services/barberService';
 
 const BarberDashboard = () => {
   const getTodayString = () => new Date().toISOString().split('T')[0];

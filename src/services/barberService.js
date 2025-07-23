@@ -3,7 +3,8 @@
 const CREATE_BARBER_ENDPOINT = '/.netlify/functions/create-barber';
 const GET_BARBERS_ENDPOINT = '/.netlify/functions/get-barbers';
 const DELETE_BARBER_ENDPOINT = '/.netlify/functions/delete-barber';
-const UPDATE_BARBER_ENDPOINT = '/.netlify/functions/update-barber'; // Novo endpoint
+const UPDATE_BARBER_ENDPOINT = '/.netlify/functions/update-barber';
+const GET_APPOINTMENTS_ENDPOINT = '/.netlify/functions/get-barber-appointments'; // Novo endpoint
 
 export const createBarber = async (barberData, token) => {
   try {
@@ -76,7 +77,6 @@ export const deleteBarber = async (barberId, token) => {
   }
 };
 
-// 👇 NOVA FUNÇÃO ADICIONADA 👇
 export const updateBarber = async (barberId, barberData, token) => {
   try {
     const response = await fetch(`${UPDATE_BARBER_ENDPOINT}/${barberId}`, {
@@ -98,6 +98,26 @@ export const updateBarber = async (barberId, barberData, token) => {
 
   } catch (error) {
     console.error("Erro no serviço updateBarber:", error);
+    throw error;
+  }
+};
+
+// 👇 NOVA FUNÇÃO ADICIONADA 👇
+export const getBarberAppointments = async (date, token) => {
+  try {
+    const response = await fetch(`${GET_APPOINTMENTS_ENDPOINT}?date=${date}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Falha ao buscar agendamentos.');
+    }
+    return data;
+  } catch (error) {
+    console.error("Erro no serviço getBarberAppointments:", error);
     throw error;
   }
 };
