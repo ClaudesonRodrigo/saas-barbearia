@@ -2,12 +2,14 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { getClientAppointments } from '../services/publicService';
+// Importamos a nova função de cancelamento
+import { getClientAppointments, cancelClientAppointment } from '../services/publicService';
 
 const ClientDashboard = () => {
   const [appointments, setAppointments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [message, setMessage] = useState(''); // Estado para mensagens de sucesso
   
   const { currentUser } = useAuth();
 
@@ -31,11 +33,30 @@ const ClientDashboard = () => {
     fetchAppointments();
   }, [fetchAppointments]);
 
+  // 👇 NOVA FUNÇÃO PARA CANCELAR AGENDAMENTO 👇
+  const handleCancel = async (barbershopId, appointmentId) => {
+    if (!window.confirm("Tem a certeza que deseja cancelar este agendamento?")) {
+      return;
+    }
+    try {
+      setMessage('');
+      setError('');
+      const token = await currentUser.getIdToken();
+      await cancelClientAppointment(barbershopId, appointmentId, token);
+      setMessage("Agendamento cancelado com sucesso!");
+      // Atualiza a lista para remover o item cancelado
+      fetchAppointments();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
   return (
     <div>
       <h1>Os Meus Agendamentos</h1>
       <p>Bem-vindo, {currentUser?.displayName}! Aqui está o seu histórico de agendamentos.</p>
       
+      {message && <p style={{ color: 'green' }}>{message}</p>}
       {error && <p style={{ color: 'red' }}>{error}</p>}
 
       <hr style={{ margin: '20px 0' }} />
@@ -49,6 +70,14 @@ const ClientDashboard = () => {
                   <strong>{app.formattedDate} às {app.time}</strong>
                   <br />
                   <span>Serviço: {app.serviceName}</span>
+                  <br />
+                  {/* 👇 BOTÃO DE CANCELAR ADICIONADO 👇 */}
+                  <button 
+                    onClick={() => handleCancel(app.barbershopId, app.id)} 
+                    style={{ marginTop: '10px' }}
+                  >
+                    Cancelar Agendamento
+                  </button>
                 </li>
               ))}
             </ul>

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext'; // 1. Importamos o useAuth
 import { registerClient } from '../services/publicService';
 
 const RegisterPage = () => {
@@ -11,6 +12,8 @@ const RegisterPage = () => {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  
+  const { login } = useAuth(); // 2. Obtemos a função de login do nosso contexto
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -20,18 +23,20 @@ const RegisterPage = () => {
     setMessage('');
 
     try {
-      const result = await registerClient({ name, email, password });
-      setMessage(result.message + " Você será redirecionado para o login.");
+      // Primeiro, registamos o cliente no back-end
+      await registerClient({ name, email, password });
       
-      // Após 3 segundos, redireciona para a página de login
-      setTimeout(() => {
-        navigate('/login');
-      }, 3000);
+      // 3. Se o registo for bem-sucedido, fazemos o login automaticamente
+      await login(email, password);
+
+      // 4. E redirecionamos diretamente para a página de barbearias
+      navigate('/barbearias');
 
     } catch (err) {
       setError(err.message);
       setLoading(false);
     }
+    // O setLoading(false) não é mais necessário aqui, pois a página irá navegar
   };
 
   return (
@@ -72,7 +77,7 @@ const RegisterPage = () => {
           />
         </div>
         <button disabled={loading} type="submit">
-          {loading ? 'A registar...' : 'Registar'}
+          {loading ? 'A registar...' : 'Registar e Entrar'}
         </button>
       </form>
 

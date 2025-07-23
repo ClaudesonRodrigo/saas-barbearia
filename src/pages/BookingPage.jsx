@@ -2,10 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext'; // 1. Importamos o useAuth
 import { getPublicBarbershopData, getAvailableSlots, createAppointment } from '../services/publicService';
 
 const BookingPage = () => {
   const { slug } = useParams(); 
+  const { currentUser } = useAuth(); // 2. Obtemos o utilizador atual
   
   const getTodayString = () => new Date().toISOString().split('T')[0];
   
@@ -13,9 +15,8 @@ const BookingPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Estados para o processo de agendamento
   const [selectedService, setSelectedService] = useState(null);
-  const [selectedBarber, setSelectedBarber] = useState(null); // Novo estado
+  const [selectedBarber, setSelectedBarber] = useState(null);
   const [selectedDate, setSelectedDate] = useState(getTodayString());
   const [selectedSlot, setSelectedSlot] = useState(null);
 
@@ -27,6 +28,14 @@ const BookingPage = () => {
   const [isBooking, setIsBooking] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState('');
   
+  // 3. Efeito para preencher os dados do utilizador se ele estiver autenticado
+  useEffect(() => {
+    if (currentUser) {
+      setClientName(currentUser.displayName || '');
+      setClientEmail(currentUser.email || '');
+    }
+  }, [currentUser]); // Este efeito roda sempre que o estado do utilizador mudar
+
   const handleServiceSelect = (service) => { setSelectedService(service); setSelectedBarber(null); setSelectedSlot(null); };
   const handleBarberSelect = (barber) => { setSelectedBarber(barber); setSelectedSlot(null); };
   const handleDateChange = (event) => { setSelectedDate(event.target.value); setSelectedSlot(null); };
@@ -45,7 +54,6 @@ const BookingPage = () => {
   }, [slug]);
 
   useEffect(() => {
-    // A busca de horários agora depende também do barbeiro
     if (selectedService && selectedDate && selectedBarber) {
       const fetchSlots = async () => {
         setIsLoadingSlots(true);
@@ -73,7 +81,7 @@ const BookingPage = () => {
         serviceId: selectedService.id,
         serviceName: selectedService.name,
         serviceDuration: selectedService.duration,
-        barberId: selectedBarber.id, // Enviamos o ID do barbeiro
+        barberId: selectedBarber.id,
         date: selectedDate,
         slot: selectedSlot,
         clientName,
@@ -172,8 +180,28 @@ const BookingPage = () => {
             A agendar <strong>{selectedService.name}</strong> com <strong>{selectedBarber.name}</strong> para <strong>{new Date(selectedDate).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</strong> às <strong>{selectedSlot}</strong>.
           </p>
           <form onSubmit={handleBookingSubmit}>
-            <div><label>O seu Nome:</label><input type="text" value={clientName} onChange={(e) => setClientName(e.target.value)} required /></div>
-            <div><label>O seu E-mail:</label><input type="email" value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} required /></div>
+            <div>
+              <label>O seu Nome:</label>
+              <input 
+                type="text" 
+                value={clientName} 
+                onChange={(e) => setClientName(e.target.value)} 
+                required 
+                readOnly={!!currentUser} // 4. Bloqueia o campo se o utilizador estiver autenticado
+                style={{ background: currentUser ? '#eee' : '#fff' }}
+              />
+            </div>
+            <div>
+              <label>O seu E-mail:</label>
+              <input 
+                type="email" 
+                value={clientEmail} 
+                onChange={(e) => setClientEmail(e.target.value)} 
+                required 
+                readOnly={!!currentUser} // 4. Bloqueia o campo se o utilizador estiver autenticado
+                style={{ background: currentUser ? '#eee' : '#fff' }}
+              />
+            </div>
             <button type="submit" disabled={isBooking}>{isBooking ? 'A confirmar...' : 'Confirmar Agendamento'}</button>
           </form>
         </section>
