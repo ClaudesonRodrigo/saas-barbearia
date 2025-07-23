@@ -16,57 +16,69 @@ const db = getFirestore();
 const TIME_ZONE = 'America/Sao_Paulo';
 
 exports.handler = async function(event, context) {
-  // Esta função só aceita requisições POST
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
   try {
-    // 1. Pegamos os dados do agendamento enviados pelo front-end
     const {
       barbershopId,
       serviceId,
       serviceName,
       serviceDuration,
+      barberId,
       date, // Formato "YYYY-MM-DD"
       slot, // Formato "HH:mm"
       clientName,
       clientEmail
     } = JSON.parse(event.body);
 
-    // Validação básica dos dados recebidos
-    if (!barbershopId || !serviceId || !date || !slot || !clientName || !clientEmail) {
+    if (!barbershopId || !serviceId || !date || !slot || !clientName || !clientEmail || !barberId) {
       return { statusCode: 400, body: JSON.stringify({ message: "Dados do agendamento incompletos." }) };
     }
 
-    // 2. Convertemos a data e o horário para um Timestamp do Firestore
-    // Isso é crucial para que possamos fazer buscas por data no futuro
     const [hour, minute] = slot.split(':');
     const appointmentDateTimeString = `${date}T${hour}:${minute}:00`;
-    
-    // Usamos a biblioteca de fuso horário para garantir que a data seja salva corretamente em UTC
     const appointmentDate = fromZonedTime(appointmentDateTimeString, TIME_ZONE);
+    const appointmentEnd = new Date(appointmentDate.getTime() + serviceDuration * 60000);
 
-    // 3. TODO: Adicionar uma verificação de segurança
-    // Antes de salvar, deveríamos verificar novamente se este horário ainda está disponível.
-    // Isso evita que duas pessoas agendem ao mesmo tempo. Por enquanto, vamos pular esta etapa para simplificar.
+    // --- VERIFICAÇÃO DE SEGURANÇA FINAL NO BACK-END ---
+    const appointmentsRef = db.collection('barbershops').doc(barbershopId).collection('appointments');
+    const querySnapshot = await appointmentsRef
+        .where('barberId', '==', barberId)
+        .where('date', '>=', fromZonedTime(`${date}T00:00:00`, TIME_ZONE))
+        .where('date', '<=', fromZonedTime(`${date}T23:59:59`, TIME_ZONE))
+        .get();
 
-    // 4. Salvamos o novo agendamento na subcoleção 'appointments' da barbearia correta
+    const isAlreadyBooked = querySnapshot.docs.some(doc => {
+        const existingApp = doc.data();
+        const existingStart = existingApp.date.toDate();
+        const existingEnd = new Date(existingStart.getTime() + (existingApp.serviceDuration * 60000));
+        // Verifica colisão
+        return appointmentDate.getTime() < existingEnd.getTime() && appointmentEnd.getTime() > existingStart.getTime();
+    });
+
+    if (isAlreadyBooked) {
+        return { statusCode: 409, body: JSON.stringify({ message: "Conflito: Este horário já foi reservado. Por favor, escolha outro." }) };
+    }
+    // --- FIM DA VERIFICAÇÃO ---
+    
     const newAppointmentRef = db.collection('barbershops').doc(barbershopId).collection('appointments').doc();
     
     await newAppointmentRef.set({
       serviceId,
       serviceName,
       serviceDuration: Number(serviceDuration),
+      barberId,
       clientName,
       clientEmail,
-      date: Timestamp.fromDate(appointmentDate), // Salva como um tipo de data do Firestore
-      status: 'confirmed', // Status inicial do agendamento
-      createdAt: Timestamp.now(), // Data de quando o agendamento foi criado
+      date: Timestamp.fromDate(appointmentDate),
+      status: 'confirmed',
+      createdAt: Timestamp.now(),
     });
 
     return { 
-      statusCode: 201, // 201 Created
+      statusCode: 201,
       body: JSON.stringify({ message: 'Agendamento confirmado com sucesso!', appointmentId: newAppointmentRef.id }) 
     };
 

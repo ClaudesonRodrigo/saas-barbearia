@@ -22,10 +22,9 @@ exports.handler = async function(event, context) {
   }
 
   try {
-    // 1. Pegamos os parâmetros, incluindo o novo 'barberId' (que pode ser opcional)
     const { slug, date, duration, barberId } = event.queryStringParameters;
-    if (!slug || !date || !duration) {
-      return { statusCode: 400, body: JSON.stringify({ message: "Dados insuficientes." }) };
+    if (!slug || !date || !duration || !barberId) {
+      return { statusCode: 400, body: JSON.stringify({ message: "Dados insuficientes. A seleção do profissional é obrigatória." }) };
     }
     const serviceDuration = parseInt(duration);
     
@@ -41,18 +40,13 @@ exports.handler = async function(event, context) {
     const dailyBusinessHours = shopData.businessHours || { start: '09:00', end: '18:00' };
     const lunchBreak = shopData.lunchBreak || { start: '12:00', end: '13:00' };
 
-    // 2. A busca de agendamentos agora pode ser filtrada por barbeiro
     const selectedDayStart = fromZonedTime(`${date}T00:00:00`, TIME_ZONE);
     const selectedDayEnd = fromZonedTime(`${date}T23:59:59`, TIME_ZONE);
 
-    let appointmentsQuery = db.collection('barbershops').doc(barbershopId).collection('appointments')
+    const appointmentsQuery = db.collection('barbershops').doc(barbershopId).collection('appointments')
       .where('date', '>=', selectedDayStart)
-      .where('date', '<=', selectedDayEnd);
-
-    // Se um barbeiro específico foi escolhido, adicionamos o filtro
-    if (barberId) {
-      appointmentsQuery = appointmentsQuery.where('barberId', '==', barberId);
-    }
+      .where('date', '<=', selectedDayEnd)
+      .where('barberId', '==', barberId);
     
     const appointmentsSnapshot = await appointmentsQuery.get();
       
@@ -63,26 +57,32 @@ exports.handler = async function(event, context) {
       bookedSlots.push({ start: zonedDate, duration: bookingData.serviceDuration || 30 });
     });
 
-    // 3. A geração de horários continua a mesma, mas agora com os agendamentos filtrados
     const availableSlots = [];
     let currentTime = fromZonedTime(`${date}T${dailyBusinessHours.start}`, TIME_ZONE);
     const dayEnd = fromZonedTime(`${date}T${dailyBusinessHours.end}`, TIME_ZONE);
     const lunchStart = fromZonedTime(`${date}T${lunchBreak.start}`, TIME_ZONE);
     const lunchEnd = fromZonedTime(`${date}T${lunchBreak.end}`, TIME_ZONE);
 
+    // --- NOVA LÓGICA PARA VERIFICAR O DIA ATUAL ---
+    const now = toZonedTime(new Date(), TIME_ZONE);
+    const isToday = format(now, 'yyyy-MM-dd') === date;
+
     while (currentTime < dayEnd) {
       const slotStart = currentTime;
       const slotEnd = new Date(slotStart.getTime() + serviceDuration * 60000);
       
-      const isDuringLunch = slotStart < lunchEnd && slotEnd > lunchStart;
+      const isDuringLunch = slotStart.getTime() < lunchEnd.getTime() && slotEnd.getTime() > lunchStart.getTime();
       const isAfterWork = slotEnd > dayEnd;
+      // Nova verificação: o horário já passou?
+      const isPastTime = isToday && slotStart < now;
       
-      if (!isDuringLunch && !isAfterWork) {
+      if (!isDuringLunch && !isAfterWork && !isPastTime) {
         const isBooked = bookedSlots.some(bookedSlot => {
             const bookedStart = bookedSlot.start;
             const bookedEnd = new Date(bookedStart.getTime() + bookedSlot.duration * 60000); 
-            return slotStart < bookedEnd && slotEnd > bookedStart;
+            return slotStart.getTime() < bookedEnd.getTime() && slotEnd.getTime() > bookedStart.getTime();
         });
+
         if (!isBooked) {
           availableSlots.push(format(slotStart, 'HH:mm', { timeZone: TIME_ZONE }));
         }

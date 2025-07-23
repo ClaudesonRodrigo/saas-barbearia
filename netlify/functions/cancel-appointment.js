@@ -22,7 +22,6 @@ exports.handler = async function(event, context) {
 
   try {
     // --- LÓGICA DE SEGURANÇA ---
-    // Verificamos o token do Dono da Barbearia para garantir que ele só pode cancelar agendamentos da sua loja
     const token = event.headers.authorization.split("Bearer ")[1];
     const decodedToken = await authAdmin.verifyIdToken(token);
     const { role, barbershopId } = decodedToken;
@@ -32,18 +31,14 @@ exports.handler = async function(event, context) {
     }
     // --- FIM DA LÓGICA DE SEGURANÇA ---
 
-    // Pegamos o ID do agendamento que queremos cancelar, que virá na URL
-    // Ex: /.netlify/functions/cancel-appointment/ID_DO_AGENDAMENTO
     const appointmentId = event.path.split("/").pop();
 
     if (!appointmentId) {
       return { statusCode: 400, body: JSON.stringify({ message: "ID do agendamento não fornecido." }) };
     }
 
-    // Montamos a referência para o documento que queremos apagar
     const appointmentRef = db.collection('barbershops').doc(barbershopId).collection('appointments').doc(appointmentId);
     
-    // Apagamos o documento
     await appointmentRef.delete();
 
     return { 

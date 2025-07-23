@@ -1,7 +1,7 @@
 // src/pages/LoginPage.jsx
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext'; // O nosso hook para aceder à função de login
-import { useNavigate } from 'react-router-dom'; // Para redirecionar após o login
+import { useNavigate, Link } from 'react-router-dom'; // Para redirecionar após o login e usar o Link
 
 const LoginPage = () => {
   // Estados para guardar os dados do formulário
@@ -33,8 +33,11 @@ const LoginPage = () => {
         navigate('/super-admin');
       } else if (userRole === 'shopOwner') {
         navigate('/dashboard');
-      } else if (userRole === 'barber') { // 👈 LÓGICA ADICIONADA PARA O BARBEIRO
+      } else if (userRole === 'barber') {
         navigate('/minha-agenda');
+      } else if (userRole === 'client') {
+        // Redireciona o cliente para o seu painel
+        navigate('/barbearias');
       } else {
         // Se não tiver uma role definida, vai para a página inicial
         navigate('/');
@@ -78,6 +81,11 @@ const LoginPage = () => {
           {loading ? 'A entrar...' : 'Entrar'}
         </button>
       </form>
+      
+      {/* Link para a página de registo */}
+      <div style={{ marginTop: '20px' }}>
+        <Link to="/register">Não tem uma conta? Registe-se</Link>
+      </div>
     </div>
   );
 };
