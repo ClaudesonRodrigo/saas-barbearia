@@ -28,7 +28,6 @@ const PlansPage = () => {
     setError('');
 
     try {
-      // 1. Obtemos o token do utilizador
       const token = await currentUser.getIdToken();
       const planData = {
         planId: plan.id,
@@ -36,10 +35,8 @@ const PlansPage = () => {
         planPrice: plan.price,
       };
       
-      // 2. Chamamos o nosso back-end para criar a sessão de checkout
       const { sessionId } = await createStripeCheckoutSession(planData, token);
 
-      // 3. Usamos a biblioteca da Stripe para redirecionar para o checkout
       const stripe = await stripePromise;
       const { error } = await stripe.redirectToCheckout({
         sessionId: sessionId,
