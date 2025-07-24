@@ -2,16 +2,19 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { createPaymentPreference } from '../services/paymentService';
+import { createStripeCheckoutSession } from '../services/paymentService';
+import { loadStripe } from '@stripe/stripe-js';
 
-// Planos definidos diretamente no código por enquanto
+// Carregamos a instância da Stripe fora do componente para evitar recarregá-la a cada renderização
+const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
+
 const plans = [
   { id: 'monthly_plan', name: 'Plano Mensal', price: 49.90, description: 'Acesso completo por 30 dias.' },
   { id: 'yearly_plan', name: 'Plano Anual', price: 499.90, description: 'Acesso por 1 ano com desconto.' },
 ];
 
 const PlansPage = () => {
-  const [loadingPlan, setLoadingPlan] = useState(null); // Para saber qual plano está a ser processado
+  const [loadingPlan, setLoadingPlan] = useState(null);
   const [error, setError] = useState('');
   const { currentUser } = useAuth();
 
@@ -25,6 +28,7 @@ const PlansPage = () => {
     setError('');
 
     try {
+      // 1. Obtemos o token do utilizador
       const token = await currentUser.getIdToken();
       const planData = {
         planId: plan.id,
@@ -32,10 +36,19 @@ const PlansPage = () => {
         planPrice: plan.price,
       };
       
-      const response = await createPaymentPreference(planData, token);
+      // 2. Chamamos o nosso back-end para criar a sessão de checkout
+      const { sessionId } = await createStripeCheckoutSession(planData, token);
 
-      // Redireciona o utilizador para a página de checkout do Mercado Pago
-      window.location.href = response.checkoutUrl;
+      // 3. Usamos a biblioteca da Stripe para redirecionar para o checkout
+      const stripe = await stripePromise;
+      const { error } = await stripe.redirectToCheckout({
+        sessionId: sessionId,
+      });
+
+      if (error) {
+        setError(error.message);
+        setLoadingPlan(null);
+      }
 
     } catch (err) {
       setError(err.message);
