@@ -5,12 +5,13 @@ import { useAuth } from '../contexts/AuthContext';
 import { createStripeCheckoutSession } from '../services/paymentService';
 import { loadStripe } from '@stripe/stripe-js';
 
-// Carregamos a instância da Stripe fora do componente para evitar recarregá-la a cada renderização
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
 
+// Adicionámos o novo Plano Semestral
 const plans = [
-  { id: 'monthly_plan', name: 'Plano Mensal', price: 49.90, description: 'Acesso completo por 30 dias.' },
-  { id: 'yearly_plan', name: 'Plano Anual', price: 499.90, description: 'Acesso por 1 ano com desconto.' },
+  { id: 'monthly_plan', name: 'Plano Mensal', price: 49.90, description: 'Acesso completo e até 4 barbeiros.' },
+  { id: 'semestral_plan', name: 'Plano Semestral', price: 249.90, description: 'Acesso por 6 meses e até 10 barbeiros.' },
+  { id: 'yearly_plan', name: 'Plano Anual', price: 499.90, description: 'Acesso por 1 ano e barbeiros ilimitados.' },
 ];
 
 const PlansPage = () => {

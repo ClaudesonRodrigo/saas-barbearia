@@ -17,7 +17,8 @@ export function useAuth() {
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [userRole, setUserRole] = useState(null);
-  const [subscriptionStatus, setSubscriptionStatus] = useState(null); // Novo estado
+  const [subscriptionStatus, setSubscriptionStatus] = useState(null);
+  const [planId, setPlanId] = useState(null); // Novo estado para o plano
   const [loading, setLoading] = useState(true);
 
   const login = (email, password) => signInWithEmailAndPassword(auth, email, password);
@@ -31,27 +32,31 @@ export function AuthProvider({ children }) {
         const role = idTokenResult.claims.role || null;
         setUserRole(role);
 
-        // Se o utilizador for um dono de barbearia, verificamos o estado da sua assinatura
         if (role === 'shopOwner') {
           const barbershopId = idTokenResult.claims.barbershopId;
           if (barbershopId) {
             const shopDocRef = doc(db, "barbershops", barbershopId);
             const shopDoc = await getDoc(shopDocRef);
             if (shopDoc.exists()) {
-              // CORREÇÃO: Se o estado não existir, assume-se 'inactive'
-              setSubscriptionStatus(shopDoc.data().subscriptionStatus || 'inactive');
+              const shopData = shopDoc.data();
+              setSubscriptionStatus(shopData.subscriptionStatus || 'inactive');
+              setPlanId(shopData.planId || null); // Guardamos o ID do plano
             } else {
               setSubscriptionStatus('inactive');
+              setPlanId(null);
             }
           } else {
             setSubscriptionStatus('inactive');
+            setPlanId(null);
           }
         } else {
-          setSubscriptionStatus(null); // Reset para outros tipos de utilizador
+          setSubscriptionStatus(null);
+          setPlanId(null);
         }
       } else {
         setUserRole(null);
         setSubscriptionStatus(null);
+        setPlanId(null);
       }
       setLoading(false);
     });
@@ -59,9 +64,8 @@ export function AuthProvider({ children }) {
     return unsubscribe;
   }, []);
 
-  // Passamos o valor diretamente para o Provider para evitar o erro do linter
   return (
-    <AuthContext.Provider value={{ currentUser, userRole, subscriptionStatus, loading, login, logout }}>
+    <AuthContext.Provider value={{ currentUser, userRole, subscriptionStatus, planId, loading, login, logout }}>
       {!loading && children}
     </AuthContext.Provider>
   );

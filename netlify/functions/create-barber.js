@@ -11,9 +11,15 @@ if (getApps().length === 0) {
     credential: cert(serviceAccount),
   });
 }
-
 const authAdmin = getAuth();
 const db = getFirestore();
+
+// Definimos os limites para cada plano
+const PLAN_LIMITS = {
+  monthly_plan: 4,
+  semestral_plan: 10,
+  yearly_plan: Infinity, // Ilimitado
+};
 
 exports.handler = async function(event, context) {
   if (event.httpMethod !== 'POST') {
@@ -21,47 +27,56 @@ exports.handler = async function(event, context) {
   }
 
   try {
-    // --- LÓGICA DE SEGURANÇA ---
-    // Verificamos o token do Dono da Barbearia para saber quem está fazendo a requisição
     const token = event.headers.authorization.split("Bearer ")[1];
     const decodedToken = await authAdmin.verifyIdToken(token);
     const { role, barbershopId } = decodedToken;
 
-    // Apenas um 'shopOwner' pode cadastrar um barbeiro
     if (role !== 'shopOwner' || !barbershopId) {
       return { statusCode: 403, body: JSON.stringify({ message: "Acesso negado." }) };
     }
-    // --- FIM DA LÓGICA DE SEGURANÇA ---
 
-    // Pegamos os dados do novo barbeiro (nome e email)
+    // --- LÓGICA DE VERIFICAÇÃO DE LIMITE ---
+    const shopRef = db.collection('barbershops').doc(barbershopId);
+    const shopDoc = await shopRef.get();
+    if (!shopDoc.exists) {
+      return { statusCode: 404, body: JSON.stringify({ message: "Barbearia não encontrada." }) };
+    }
+    
+    const planId = shopDoc.data().planId;
+    const limit = PLAN_LIMITS[planId] || 0; // Se não tiver plano, o limite é 0
+
+    const barbersSnapshot = await shopRef.collection('barbers').get();
+    const currentBarberCount = barbersSnapshot.size;
+
+    if (currentBarberCount >= limit) {
+      return { statusCode: 403, body: JSON.stringify({ message: `Limite de ${limit} barbeiros para o seu plano foi atingido.` }) };
+    }
+    // --- FIM DA LÓGICA DE VERIFICAÇÃO ---
+
     const { name, email } = JSON.parse(event.body);
-    const tempPassword = Math.random().toString(36).slice(-8); // Gera uma senha temporária
+    const tempPassword = Math.random().toString(36).slice(-8);
 
     if (!name || !email) {
       return { statusCode: 400, body: JSON.stringify({ message: "Nome e e-mail são obrigatórios." }) };
     }
     
-    // 1. Cria o usuário 'barber' no Firebase Authentication
     const userRecord = await authAdmin.createUser({
       email: email,
       password: tempPassword,
       displayName: name,
     });
 
-    // 2. Define o 'role' de Barbeiro e o ID da barbearia para esse novo usuário
     await authAdmin.setCustomUserClaims(userRecord.uid, { 
       role: 'barber',
-      barbershopId: barbershopId // Vincula à barbearia do dono que o criou
+      barbershopId: barbershopId
     });
 
-    // 3. Salva os dados do barbeiro na subcoleção 'barbers' da barbearia correta
-    await db.collection('barbershops').doc(barbershopId).collection('barbers').doc(userRecord.uid).set({
+    await shopRef.collection('barbers').doc(userRecord.uid).set({
       name: name,
       email: email,
       createdAt: new Date(),
     });
 
-    // 4. (Opcional) Salva o usuário na coleção geral 'users'
     await db.collection('users').doc(userRecord.uid).set({
       name: name,
       email: email,
@@ -71,13 +86,11 @@ exports.handler = async function(event, context) {
 
     return { 
       statusCode: 201, 
-      // Enviamos a senha temporária de volta para que o dono possa informá-la ao barbeiro
       body: JSON.stringify({ message: `Barbeiro ${name} criado com sucesso!`, temporaryPassword: tempPassword }) 
     };
 
   } catch (error) {
     console.error("Erro ao criar barbeiro:", error);
-    // Trata erro de e-mail já existente
     if (error.code === 'auth/email-already-exists') {
         return { statusCode: 409, body: JSON.stringify({ message: "Este e-mail já está em uso." }) };
     }
