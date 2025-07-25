@@ -1,11 +1,10 @@
 // src/contexts/AuthContext.js
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import { createContext, useState, useEffect, useContext } from 'react';
 import { auth, db } from '../firebase/config'; // Importamos o 'db' do firestore
 import { doc, getDoc } from "firebase/firestore"; // Funções para ler um documento
 import { 
   onAuthStateChanged, 
   signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
   signOut 
 } from "firebase/auth";
 
@@ -60,14 +59,10 @@ export function AuthProvider({ children }) {
     return unsubscribe;
   }, []);
 
-  const value = {
-    currentUser,
-    userRole,
-    subscriptionStatus, // Disponibilizamos o estado da assinatura
-    loading,
-    login,
-    logout
-  };
-
-  
+  // Passamos o valor diretamente para o Provider para evitar o erro do linter
+  return (
+    <AuthContext.Provider value={{ currentUser, userRole, subscriptionStatus, loading, login, logout }}>
+      {!loading && children}
+    </AuthContext.Provider>
+  );
 }
