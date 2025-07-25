@@ -6,8 +6,9 @@ const UPDATE_SERVICE_ENDPOINT = '/.netlify/functions/update-service';
 const DELETE_SERVICE_ENDPOINT = '/.netlify/functions/delete-service';
 const GET_APPOINTMENTS_ENDPOINT = '/.netlify/functions/get-daily-appointments';
 const CANCEL_APPOINTMENT_ENDPOINT = '/.netlify/functions/cancel-appointment';
-const GET_SETTINGS_ENDPOINT = '/.netlify/functions/get-shop-settings'; // Novo endpoint
-const UPDATE_SETTINGS_ENDPOINT = '/.netlify/functions/update-shop-settings'; // Novo endpoint
+const GET_SETTINGS_ENDPOINT = '/.netlify/functions/get-shop-settings'; 
+const UPDATE_SETTINGS_ENDPOINT = '/.netlify/functions/update-shop-settings'; 
+const GET_DASHBOARD_STATS_ENDPOINT = '/.netlify/functions/get-dashboard-stats';
 
 export const createService = async (serviceData, token) => {
   try {
@@ -187,6 +188,24 @@ export const updateShopSettings = async (settingsData, token) => {
     return data;
   } catch (error) {
     console.error("Erro no serviço updateShopSettings:", error);
+    throw error;
+  }
+};
+export const getDashboardStats = async (token) => {
+  try {
+    const response = await fetch(GET_DASHBOARD_STATS_ENDPOINT, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Falha ao buscar as estatísticas.');
+    }
+    return data;
+  } catch (error) {
+    console.error("Erro no serviço getDashboardStats:", error);
     throw error;
   }
 };

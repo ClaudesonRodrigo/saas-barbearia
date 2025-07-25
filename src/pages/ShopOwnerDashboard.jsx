@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { createService, getServices, deleteService, updateService, getDailyAppointments, cancelAppointment } from '../services/shopService';
 import { createBarber, getBarbers, deleteBarber, updateBarber } from '../services/barberService';
 import { Link } from 'react-router-dom';
-
+import DashboardMetrics from '../components/DashboardMetrics';
 const ShopOwnerDashboard = () => {
   // --- Estados para SERVIÇOS ---
   const [serviceName, setServiceName] = useState('');
@@ -153,7 +153,9 @@ const ShopOwnerDashboard = () => {
       {error && <p style={{ color: 'red', marginTop: '20px', fontWeight: 'bold' }}>{error}</p>}
       
       <hr style={{ margin: '40px 0' }} />
-
+      <section>
+        <DashboardMetrics />
+      </section>
       {/* NOVA SEÇÃO DE AGENDA */}
       <section>
         <h2>Agenda do Dia</h2>

@@ -2,12 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext'; // 1. Importamos o useAuth
+import { useAuth } from '../contexts/AuthContext';
 import { getPublicBarbershopData, getAvailableSlots, createAppointment } from '../services/publicService';
 
 const BookingPage = () => {
   const { slug } = useParams(); 
-  const { currentUser } = useAuth(); // 2. Obtemos o utilizador atual
+  const { currentUser } = useAuth();
   
   const getTodayString = () => new Date().toISOString().split('T')[0];
   
@@ -28,13 +28,12 @@ const BookingPage = () => {
   const [isBooking, setIsBooking] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState('');
   
-  // 3. Efeito para preencher os dados do utilizador se ele estiver autenticado
   useEffect(() => {
     if (currentUser) {
       setClientName(currentUser.displayName || '');
       setClientEmail(currentUser.email || '');
     }
-  }, [currentUser]); // Este efeito roda sempre que o estado do utilizador mudar
+  }, [currentUser]);
 
   const handleServiceSelect = (service) => { setSelectedService(service); setSelectedBarber(null); setSelectedSlot(null); };
   const handleBarberSelect = (barber) => { setSelectedBarber(barber); setSelectedSlot(null); };
@@ -76,11 +75,14 @@ const BookingPage = () => {
     setError('');
     setBookingSuccess('');
     try {
+      // --- ATUALIZAÇÃO AQUI ---
+      // Adicionamos o 'servicePrice' ao objeto de dados
       const appointmentData = {
         barbershopId: barbershopData.shop.id,
         serviceId: selectedService.id,
         serviceName: selectedService.name,
         serviceDuration: selectedService.duration,
+        servicePrice: selectedService.price, // Adicionámos o preço
         barberId: selectedBarber.id,
         date: selectedDate,
         slot: selectedSlot,
@@ -187,7 +189,7 @@ const BookingPage = () => {
                 value={clientName} 
                 onChange={(e) => setClientName(e.target.value)} 
                 required 
-                readOnly={!!currentUser} // 4. Bloqueia o campo se o utilizador estiver autenticado
+                readOnly={!!currentUser}
                 style={{ background: currentUser ? '#eee' : '#fff' }}
               />
             </div>
@@ -198,7 +200,7 @@ const BookingPage = () => {
                 value={clientEmail} 
                 onChange={(e) => setClientEmail(e.target.value)} 
                 required 
-                readOnly={!!currentUser} // 4. Bloqueia o campo se o utilizador estiver autenticado
+                readOnly={!!currentUser}
                 style={{ background: currentUser ? '#eee' : '#fff' }}
               />
             </div>
