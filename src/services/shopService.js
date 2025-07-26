@@ -191,21 +191,27 @@ export const updateShopSettings = async (settingsData, token) => {
     throw error;
   }
 };
-export const getDashboardStats = async (token) => {
-  try {
-    const response = await fetch(GET_DASHBOARD_STATS_ENDPOINT, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`
+  export const getDashboardStats = async (token, startDate, endDate) => {
+    try {
+      // Construímos a URL com os parâmetros de data, se existirem
+      let url = GET_DASHBOARD_STATS_ENDPOINT;
+      if (startDate && endDate) {
+        url += `?startDate=${startDate}&endDate=${endDate}`;
       }
-    });
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.message || 'Falha ao buscar as estatísticas.');
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Falha ao buscar as estatísticas.');
+      }
+      return data;
+    } catch (error) {
+      console.error("Erro no serviço getDashboardStats:", error);
+      throw error;
     }
-    return data;
-  } catch (error) {
-    console.error("Erro no serviço getDashboardStats:", error);
-    throw error;
-  }
-};
+  };

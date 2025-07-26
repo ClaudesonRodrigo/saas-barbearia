@@ -3,7 +3,7 @@
 const { initializeApp, getApps, cert } = require('firebase-admin/app');
 const { getFirestore } = require('firebase-admin/firestore');
 const { getAuth } = require('firebase-admin/auth');
-const { subDays } = require('date-fns'); // Usaremos para calcular datas passadas
+const { subDays, startOfDay, endOfDay } = require('date-fns'); // Usaremos mais funções de data
 
 // Inicialização do Firebase Admin
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
@@ -31,15 +31,25 @@ exports.handler = async function(event, context) {
     }
     // --- FIM DA LÓGICA DE SEGURANÇA ---
 
-    // 1. Definimos o período de análise (últimos 30 dias)
-    const today = new Date();
-    const thirtyDaysAgo = subDays(today, 30);
+    // 1. Recebemos o período de análise da URL. Se não for fornecido, usamos os últimos 30 dias como padrão.
+    const { startDate: startDateStr, endDate: endDateStr } = event.queryStringParameters;
 
-    // 2. Buscamos todos os agendamentos da barbearia neste período
+    let startDate, endDate;
+
+    if (startDateStr && endDateStr) {
+      startDate = startOfDay(new Date(startDateStr));
+      endDate = endOfDay(new Date(endDateStr));
+    } else {
+      const today = new Date();
+      endDate = endOfDay(today);
+      startDate = startOfDay(subDays(today, 29)); // 30 dias incluindo hoje
+    }
+
+    // 2. Buscamos todos os agendamentos da barbearia no período definido
     const appointmentsRef = db.collection('barbershops').doc(barbershopId).collection('appointments');
     const appointmentsSnapshot = await appointmentsRef
-      .where('date', '>=', thirtyDaysAgo)
-      .where('date', '<=', today)
+      .where('date', '>=', startDate)
+      .where('date', '<=', endDate)
       .get();
       
     // 3. Inicializamos as nossas métricas
@@ -51,12 +61,10 @@ exports.handler = async function(event, context) {
     appointmentsSnapshot.forEach(doc => {
       const data = doc.data();
       
-      // Ignoramos agendamentos sem preço para não distorcer a faturação
       if (data.servicePrice && typeof data.servicePrice === 'number') {
         totalAppointments++;
         totalRevenue += data.servicePrice;
 
-        // Contamos a popularidade de cada serviço
         if (data.serviceName) {
           serviceCounts[data.serviceName] = (serviceCounts[data.serviceName] || 0) + 1;
         }
@@ -75,8 +83,8 @@ exports.handler = async function(event, context) {
       totalRevenue,
       popularServices,
       period: {
-        start: thirtyDaysAgo.toISOString().split('T')[0],
-        end: today.toISOString().split('T')[0],
+        start: startDate.toISOString().split('T')[0],
+        end: endDate.toISOString().split('T')[0],
       }
     };
 
