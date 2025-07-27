@@ -1,0 +1,111 @@
+/* src/pages/PlansPage.module.scss */
+
+.pageContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+  background-color: #111827; // Fundo escuro
+  color: #e5e7eb; // Texto claro
+  min-height: 90vh;
+}
+
+.title {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.subtitle {
+  font-size: 1.25rem;
+  color: #9ca3af;
+  margin-top: 0.5rem;
+  margin-bottom: 3rem;
+  text-align: center;
+}
+
+.error {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  background-color: #450a0a;
+  color: #fecaca;
+}
+
+.plansGrid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2rem;
+  perspective: 1000px;
+}
+
+.planCard {
+  background-color: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 0.75rem;
+  padding: 2rem;
+  width: 100%;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+  transform-style: preserve-3d;
+
+  // --- CORREÇÃO AQUI ---
+  // Aplica o efeito 3D apenas em dispositivos com capacidade de hover (ex: desktop com rato)
+  @media (hover: hover) {
+    &:hover {
+      transform: rotateY(10deg) rotateX(5deg) scale(1.05);
+      box-shadow: 0 20px 30px rgba(0, 0, 0, 0.4);
+    }
+  }
+}
+
+.planName {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.planPrice {
+  font-size: 3rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 1rem 0;
+
+  span {
+    font-size: 1rem;
+    font-weight: 500;
+    color: #9ca3af;
+  }
+}
+
+.planDescription {
+  color: #9ca3af;
+  flex-grow: 1;
+  margin-bottom: 2rem;
+}
+
+.button {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #3b82f6;
+  color: white;
+  font-weight: bold;
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #2563eb;
+  }
+
+  &:disabled {
+    background-color: #1e40af;
+    cursor: not-allowed;
+  }
+}

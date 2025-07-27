@@ -1,25 +1,25 @@
-// src/pages/BarberDashboard.jsx
+// src/pages/ClientDashboard.jsx
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { getBarberAppointments } from '../services/barberService';
+import { getClientAppointments, cancelClientAppointment } from '../services/publicService';
+import styles from './ClientDashboard.module.scss'; // Importamos os nossos novos estilos
 
-const BarberDashboard = () => {
-  const getTodayString = () => new Date().toISOString().split('T')[0];
-  const [selectedDate, setSelectedDate] = useState(getTodayString());
+const ClientDashboard = () => {
   const [appointments, setAppointments] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
   
   const { currentUser } = useAuth();
 
-  const fetchAppointments = useCallback(async (date) => {
+  const fetchAppointments = useCallback(async () => {
     if (!currentUser) return;
     setIsLoading(true);
     setError('');
     try {
       const token = await currentUser.getIdToken();
-      const data = await getBarberAppointments(date, token);
+      const data = await getClientAppointments(token);
       setAppointments(data);
     } catch (err) {
       setError(err.message);
@@ -30,46 +30,59 @@ const BarberDashboard = () => {
   }, [currentUser]);
 
   useEffect(() => {
-    fetchAppointments(selectedDate);
-  }, [selectedDate, fetchAppointments]);
+    fetchAppointments();
+  }, [fetchAppointments]);
 
-  const handleDateChange = (e) => {
-    setSelectedDate(e.target.value);
+  const handleCancel = async (barbershopId, appointmentId) => {
+    if (!window.confirm("Tem a certeza que deseja cancelar este agendamento?")) {
+      return;
+    }
+    try {
+      setMessage('');
+      setError('');
+      const token = await currentUser.getIdToken();
+      await cancelClientAppointment(barbershopId, appointmentId, token);
+      setMessage("Agendamento cancelado com sucesso!");
+      fetchAppointments();
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   return (
-    <div>
-      <h1>Minha Agenda</h1>
-      <p>Bem-vindo, {currentUser?.displayName}! Aqui estão os seus agendamentos.</p>
+    <div className={styles.pageContainer}>
+      <header className={styles.header}>
+        <h1 className={styles.title}>Os Meus Agendamentos</h1>
+        <p className={styles.subtitle}>Bem-vindo, {currentUser?.displayName}! Aqui está o seu histórico de agendamentos.</p>
+      </header>
       
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-
-      <hr style={{ margin: '20px 0' }} />
+      {message && <div className={`${styles.messageArea} ${styles.success}`}>{message}</div>}
+      {error && <div className={`${styles.messageArea} ${styles.error}`}>{error}</div>}
 
       <section>
-        <div>
-          <label htmlFor="agenda-date" style={{ marginRight: '10px' }}>Ver agendamentos para o dia:</label>
-          <input id="agenda-date" type="date" value={selectedDate} onChange={handleDateChange} />
-        </div>
-
-        <div style={{ marginTop: '20px' }}>
-          {isLoading ? <p>A carregar agenda...</p> : 
-            appointments.length === 0 ? <p>Nenhum agendamento para este dia.</p> : (
-              <ul style={{ listStyle: 'none', padding: 0 }}>
-                {appointments.map(app => (
-                  <li key={app.id} style={{ border: '1px solid #ccc', borderRadius: '5px', padding: '10px', margin: '10px 0' }}>
-                    <strong>{app.time}</strong> - {app.clientName}
-                    <br />
-                    <span>Serviço: {app.serviceName} ({app.serviceDuration} min)</span>
-                  </li>
-                ))}
-              </ul>
-            )
-          }
-        </div>
+        {isLoading ? <p>A carregar o seu histórico...</p> : 
+          appointments.length === 0 ? <p>Você ainda não tem agendamentos.</p> : (
+            <ul className={styles.list}>
+              {appointments.map(app => (
+                <li key={app.id} className={styles.appointmentCard}>
+                  <div className={styles.appointmentInfo}>
+                    <strong>{app.formattedDate} às {app.time}</strong>
+                    <span>Serviço: {app.serviceName}</span>
+                  </div>
+                  <button 
+                    onClick={() => handleCancel(app.barbershopId, app.id)} 
+                    className={styles.cancelButton}
+                  >
+                    Cancelar Agendamento
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )
+        }
       </section>
     </div>
   );
 };
 
-export default BarberDashboard;
+export default ClientDashboard;

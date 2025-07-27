@@ -1,8 +1,8 @@
 // src/pages/SuperAdminDashboard.jsx
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '../contexts/AuthContext'; // Precisamos do token para futuras chamadas seguras
-import { createBarbershop, getBarbershops } from '../services/barbershopService'; // Importamos as nossas funções de serviço
+import { useAuth } from '../contexts/AuthContext';
+import { createBarbershop, getBarbershops } from '../services/barbershopService';
 import styles from './SuperAdminDashboard.module.scss';
 
 const SuperAdminDashboard = () => {
@@ -14,29 +14,29 @@ const SuperAdminDashboard = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const [shops, setShops] = useState([]);
-  const [isLoadingShops, setIsLoadingShops] = useState(true); // Começa como true
+  const [isLoadingShops, setIsLoadingShops] = useState(true);
 
   const { currentUser } = useAuth();
 
-  // Função para buscar as barbearias
   const fetchShops = useCallback(async () => {
+    if (!currentUser) return;
     setIsLoadingShops(true);
     try {
-      // Nota: getBarbershops pode precisar de ser ajustada para o Super Admin
-      // Por agora, vamos assumir que ela devolve todas as barbearias
-      const data = await getBarbershops();
+      const token = await currentUser.getIdToken();
+      const data = await getBarbershops(token);
       setShops(data);
     } catch (err) {
       setError("Falha ao carregar as barbearias.");
     } finally {
       setIsLoadingShops(false);
     }
-  }, []);
+  }, [currentUser]);
 
-  // Busca os dados quando o componente carrega
   useEffect(() => {
-    fetchShops();
-  }, [fetchShops]);
+    if (currentUser) {
+      fetchShops();
+    }
+  }, [fetchShops, currentUser]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -44,16 +44,13 @@ const SuperAdminDashboard = () => {
     setMessage('');
     setError('');
     try {
-      // Usamos o token do Super Admin para autorizar a criação
       const token = await currentUser.getIdToken();
       await createBarbershop({ shopName, ownerEmail, ownerPassword }, token);
       
       setMessage(`Barbearia "${shopName}" registada com sucesso!`);
-      // Limpa o formulário
       setShopName('');
       setOwnerEmail('');
       setOwnerPassword('');
-      // Atualiza a lista
       fetchShops();
 
     } catch (err) {
@@ -122,8 +119,10 @@ const SuperAdminDashboard = () => {
           <ul className={styles.list}>
             {shops.length > 0 ? shops.map(shop => (
               <li key={shop.id} className={styles.listItem}>
-                <strong>{shop.name}</strong>
-                <span>(ID do Dono: {shop.ownerId})</span>
+                <div className={styles.itemInfo}>
+                  <span className={styles.itemName}>{shop.name}</span>
+                  <span className={styles.itemId}>(ID do Dono: {shop.ownerId})</span>
+                </div>
               </li>
             )) : <p>Nenhuma barbearia registada.</p>}
           </ul>

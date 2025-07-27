@@ -35,7 +35,7 @@ const RegisterPage = () => {
 
   return (
     <div className={styles.pageContainer}>
-      <div className={styles.loginCard}>
+      <div className={styles.registerCard}>
         <h1 className={styles.title}>Criar Nova Conta</h1>
         
         {message && <p style={{ color: 'green' }}>{message}</p>}

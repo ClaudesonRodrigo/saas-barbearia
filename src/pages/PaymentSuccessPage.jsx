@@ -2,18 +2,20 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
+import styles from './PaymentSuccessPage.module.scss'; // Importamos os nossos novos estilos
 
 const PaymentSuccessPage = () => {
   return (
-    <div style={{ textAlign: 'center', padding: '40px' }}>
-      <h1 style={{ color: 'green' }}>Pagamento Aprovado!</h1>
-      <p>A sua assinatura foi ativada com sucesso.</p>
-      <p>Obrigado por se juntar à nossa plataforma.</p>
-      <Link to="/dashboard">
-        <button style={{ marginTop: '20px', padding: '10px 20px', fontSize: '1rem' }}>
+    <div className={styles.pageContainer}>
+      <div className={styles.card}>
+        <h1 className={styles.title}>Pagamento Aprovado!</h1>
+        <p className={styles.subtitle}>
+          A sua assinatura foi ativada com sucesso. Obrigado por se juntar à nossa plataforma.
+        </p>
+        <Link to="/dashboard" className={styles.button}>
           Ir para o Meu Painel
-        </button>
-      </Link>
+        </Link>
+      </div>
     </div>
   );
 };

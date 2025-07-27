@@ -1,0 +1,51 @@
+/* src/pages/PaymentSuccessPage.module.scss */
+
+.pageContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  min-height: 90vh;
+  padding: 2rem;
+  background-color: #111827; // Fundo escuro
+  color: #e5e7eb; // Texto claro
+}
+
+.card {
+  background-color: #1f2937;
+  padding: 3rem;
+  border-radius: 0.75rem;
+  border: 1px solid #374151;
+  max-width: 600px;
+}
+
+.title {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #4ade80; // Verde claro para sucesso
+  margin-bottom: 1rem;
+}
+
+.subtitle {
+  font-size: 1.25rem;
+  color: #9ca3af;
+  margin-bottom: 2rem;
+}
+
+.button {
+  display: inline-block;
+  padding: 0.75rem 2rem;
+  background-color: #3b82f6;
+  color: white;
+  font-weight: bold;
+  text-decoration: none;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #2563eb;
+  }
+}

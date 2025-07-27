@@ -101,7 +101,7 @@ const BookingPage = () => {
 
   if (bookingSuccess) {
     return (
-      <div className={styles.successMessage}>
+      <div className={`${styles.pageContainer} ${styles.successMessage}`}>
         <h1>Agendamento Confirmado!</h1>
         <p>{bookingSuccess}</p>
       </div>
@@ -174,11 +174,11 @@ const BookingPage = () => {
             <form onSubmit={handleBookingSubmit} className={styles.form}>
               <div className={styles.formGroup}>
                 <label className={styles.label}>O seu Nome:</label>
-                <input type="text" value={clientName} onChange={(e) => setClientName(e.target.value)} required readOnly={!!currentUser} className={styles.input} style={{ background: currentUser ? '#eee' : '#fff' }} />
+                <input type="text" value={clientName} onChange={(e) => setClientName(e.target.value)} required readOnly={!!currentUser} className={styles.input} />
               </div>
               <div className={styles.formGroup}>
                 <label className={styles.label}>O seu E-mail:</label>
-                <input type="email" value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} required readOnly={!!currentUser} className={styles.input} style={{ background: currentUser ? '#eee' : '#fff' }} />
+                <input type="email" value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} required readOnly={!!currentUser} className={styles.input} />
               </div>
               <button type="submit" disabled={isBooking} className={styles.button}>{isBooking ? 'A confirmar...' : 'Confirmar Agendamento'}</button>
             </form>
