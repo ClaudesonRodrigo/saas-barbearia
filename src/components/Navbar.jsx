@@ -13,20 +13,30 @@ const Navbar = () => {
   const handleLogout = async () => {
     try {
       await logout();
+      setIsMenuOpen(false); // Fecha o menu ao fazer logout
       navigate('/login');
     } catch (error) {
       console.error("Falha ao fazer logout", error);
     }
   };
 
+  // --- NOVA FUNÇÃO ---
+  // Esta função será chamada sempre que um link no menu móvel for clicado
+  const handleMobileLinkClick = () => {
+    setIsMenuOpen(false);
+  };
+
   const renderLinks = (isMobile = false) => {
-    const linkClass = isMobile ? `${styles.link} ${styles.mobileLink}` : styles.link;
+    const linkClass = isMobile ? styles.link : styles.link;
+
+    // Se for mobile, adicionamos o onClick para fechar o menu
+    const mobileProps = isMobile ? { onClick: handleMobileLinkClick } : {};
 
     if (!currentUser) {
       return (
         <>
-          <Link to="/login" className={linkClass}>Login</Link>
-          <Link to="/register" className={isMobile ? linkClass : `${styles.button} ${styles.primaryButton}`}>Registar</Link>
+          <Link to="/login" className={linkClass} {...mobileProps}>Login</Link>
+          <Link to="/register" className={isMobile ? linkClass : `${styles.button} ${styles.primaryButton}`} {...mobileProps}>Registar</Link>
         </>
       );
     }
@@ -37,23 +47,23 @@ const Navbar = () => {
         
         {userRole === 'client' && (
           <>
-            <Link to="/barbearias" className={linkClass}>Barbearias</Link>
-            <Link to="/meus-agendamentos" className={linkClass}>Os Meus Agendamentos</Link>
+            <Link to="/barbearias" className={linkClass} {...mobileProps}>Barbearias</Link>
+            <Link to="/meus-agendamentos" className={linkClass} {...mobileProps}>Os Meus Agendamentos</Link>
           </>
         )}
         {userRole === 'shopOwner' && (
           <>
-            <Link to="/dashboard" className={linkClass}>O Meu Painel</Link>
+            <Link to="/dashboard" className={linkClass} {...mobileProps}>O Meu Painel</Link>
           </>
         )}
         {userRole === 'barber' && (
           <>
-            <Link to="/minha-agenda" className={linkClass}>A Minha Agenda</Link>
+            <Link to="/minha-agenda" className={linkClass} {...mobileProps}>A Minha Agenda</Link>
           </>
         )}
         {userRole === 'superAdmin' && (
           <>
-            <Link to="/super-admin" className={linkClass}>Painel Admin</Link>
+            <Link to="/super-admin" className={linkClass} {...mobileProps}>Painel Admin</Link>
           </>
         )}
         
@@ -65,7 +75,7 @@ const Navbar = () => {
   return (
     <nav className={styles.navbar}>
       <div className={styles.container}>
-        <Link to="/" className={styles.brand}>
+        <Link to="/" className={styles.brand} onClick={handleMobileLinkClick}>
           Agenda Barber
         </Link>
         
