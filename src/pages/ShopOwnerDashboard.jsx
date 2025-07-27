@@ -1,3 +1,4 @@
+
 // src/pages/ShopOwnerDashboard.jsx
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -7,6 +8,7 @@ import { createService, getServices, deleteService, updateService, getDailyAppoi
 import { createBarber, getBarbers, deleteBarber, updateBarber } from '../services/barberService';
 import { Link } from 'react-router-dom';
 import DashboardMetrics from '../components/DashboardMetrics';
+import styles from './ShopOwnerDashboard.module.scss';
 const ShopOwnerDashboard = () => {
   // --- Estados para SERVIÇOS ---
   const [serviceName, setServiceName] = useState('');

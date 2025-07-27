@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { getShopSettings, updateShopSettings } from '../services/shopService';
 import { Link } from 'react-router-dom';
+import styles from './ShopSettingsPage.module.scss'; // Importamos os nossos novos estilos
 
 const ShopSettingsPage = () => {
   const [settings, setSettings] = useState({
@@ -26,7 +27,6 @@ const ShopSettingsPage = () => {
     try {
       const token = await currentUser.getIdToken();
       const data = await getShopSettings(token);
-      // Preenche o formulário com os dados existentes, se houver
       setSettings({
         address: data.address || '',
         phone: data.phone || '',
@@ -71,50 +71,60 @@ const ShopSettingsPage = () => {
   };
 
   if (loading) {
-    return <h1>A carregar configurações...</h1>;
+    return <div className={styles.pageContainer}><h1>A carregar configurações...</h1></div>;
   }
 
   return (
-    <div>
-      <Link to="/dashboard">← Voltar para o Painel</Link>
-      <h1>Configurações da Loja</h1>
-      <p>Defina aqui as informações e o horário de funcionamento da sua barbearia.</p>
+    <div className={styles.pageContainer}>
+      <Link to="/dashboard" className={styles.backLink}>← Voltar para o Painel</Link>
+      <h1 className={styles.title}>Configurações da Loja</h1>
+      <p className={styles.subtitle}>Defina aqui as informações e o horário de funcionamento da sua barbearia.</p>
       
-      {message && <p style={{ color: 'green' }}>{message}</p>}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {message && <div className={`${styles.messageArea} ${styles.success}`}>{message}</div>}
+      {error && <div className={`${styles.messageArea} ${styles.error}`}>{error}</div>}
 
-      <form onSubmit={handleSubmit} style={{ marginTop: '20px' }}>
-        <h3>Informações de Contacto</h3>
-        <div>
-          <label htmlFor="address">Endereço:</label>
-          <input type="text" id="address" name="address" value={settings.address} onChange={handleChange} />
-        </div>
-        <div>
-          <label htmlFor="phone">Telefone:</label>
-          <input type="tel" id="phone" name="phone" value={settings.phone} onChange={handleChange} />
-        </div>
-
-        <h3 style={{ marginTop: '30px' }}>Horário de Funcionamento</h3>
-        <div>
-          <label htmlFor="startTime">Abre às:</label>
-          <input type="time" id="startTime" name="startTime" value={settings.startTime} onChange={handleChange} />
-        </div>
-        <div>
-          <label htmlFor="endTime">Fecha às:</label>
-          <input type="time" id="endTime" name="endTime" value={settings.endTime} onChange={handleChange} />
+      <form onSubmit={handleSubmit} className={styles.form}>
+        <div className={styles.formSection}>
+          <h3 className={styles.formSectionTitle}>Informações de Contacto</h3>
+          <div className={styles.formGroup}>
+            <label htmlFor="address" className={styles.label}>Endereço:</label>
+            <input type="text" id="address" name="address" value={settings.address} onChange={handleChange} className={styles.input} />
+          </div>
+          <div className={styles.formGroup}>
+            <label htmlFor="phone" className={styles.label}>Telefone:</label>
+            <input type="tel" id="phone" name="phone" value={settings.phone} onChange={handleChange} className={styles.input} />
+          </div>
         </div>
 
-        <h3 style={{ marginTop: '30px' }}>Intervalo de Almoço</h3>
-        <div>
-          <label htmlFor="lunchStart">Início do Almoço:</label>
-          <input type="time" id="lunchStart" name="lunchStart" value={settings.lunchStart} onChange={handleChange} />
-        </div>
-        <div>
-          <label htmlFor="lunchEnd">Fim do Almoço:</label>
-          <input type="time" id="lunchEnd" name="lunchEnd" value={settings.lunchEnd} onChange={handleChange} />
+        <div className={styles.formSection}>
+          <h3 className={styles.formSectionTitle}>Horário de Funcionamento</h3>
+          <div className={styles.formGrid}>
+            <div className={styles.formGroup}>
+              <label htmlFor="startTime" className={styles.label}>Abre às:</label>
+              <input type="time" id="startTime" name="startTime" value={settings.startTime} onChange={handleChange} className={styles.input} />
+            </div>
+            <div className={styles.formGroup}>
+              <label htmlFor="endTime" className={styles.label}>Fecha às:</label>
+              <input type="time" id="endTime" name="endTime" value={settings.endTime} onChange={handleChange} className={styles.input} />
+            </div>
+          </div>
         </div>
 
-        <button type="submit" disabled={saving} style={{ marginTop: '20px' }}>
+        <div className={styles.formSection}>
+          <h3 className={styles.formSectionTitle}>Intervalo de Almoço</h3>
+          <div className={styles.formGrid}>
+            <div className={styles.formGroup}>
+              <label htmlFor="lunchStart" className={styles.label}>Início do Almoço:</label>
+              <input type="time" id="lunchStart" name="lunchStart" value={settings.lunchStart} onChange={handleChange} className={styles.input} />
+            </div>
+            <div className={styles.formGroup}>
+              <label htmlFor="lunchEnd" className={styles.label}>Fim do Almoço:</label>
+              <input type="time" id="lunchEnd" name="lunchEnd" value={settings.lunchEnd} onChange={handleChange} className={styles.input} />
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" disabled={saving} className={styles.button}>
           {saving ? 'A guardar...' : 'Guardar Configurações'}
         </button>
       </form>

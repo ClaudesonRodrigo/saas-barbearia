@@ -1,92 +1,93 @@
 // src/components/Navbar.jsx
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import styles from './Navbar.module.scss';
 
 const Navbar = () => {
   const { currentUser, userRole, logout } = useAuth();
   const navigate = useNavigate();
+  const [isMenuOpen, setIsMenuOpen] = useState(false); // Estado para controlar o menu móvel
 
   const handleLogout = async () => {
     try {
       await logout();
-      navigate('/login'); // Redireciona para o login após o logout
+      navigate('/login');
     } catch (error) {
       console.error("Falha ao fazer logout", error);
     }
   };
 
-  // Estilos simples para a barra de navegação
-  const navStyle = {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '1rem 2rem',
-    background: '#f8f9fa',
-    borderBottom: '1px solid #dee2e6',
-  };
+  const renderLinks = (isMobile = false) => {
+    const linkClass = isMobile ? `${styles.link} ${styles.mobileLink}` : styles.link;
 
-  const linkStyle = {
-    margin: '0 10px',
-    textDecoration: 'none',
-    color: '#007bff',
-  };
-
-  const userInfoStyle = {
-    display: 'flex',
-    alignItems: 'center',
-  };
-
-  const renderLinks = () => {
     if (!currentUser) {
-      // Links para visitantes não autenticados
       return (
-        <div>
-          <Link to="/login" style={linkStyle}>Login</Link>
-          <Link to="/register" style={linkStyle}>Registar</Link>
-        </div>
+        <>
+          <Link to="/login" className={linkClass}>Login</Link>
+          <Link to="/register" className={isMobile ? linkClass : `${styles.button} ${styles.primaryButton}`}>Registar</Link>
+        </>
       );
     }
 
-    // Links baseados na permissão (role) do utilizador
     return (
-      <div style={userInfoStyle}>
-        <span style={{ marginRight: '20px' }}>Olá, {currentUser.displayName || currentUser.email}!</span>
+      <>
+        <span className={styles.welcomeText}>Olá, {currentUser.displayName || currentUser.email}!</span>
         
         {userRole === 'client' && (
           <>
-            <Link to="/barbearias" style={linkStyle}>Barbearias</Link>
-            <Link to="/meus-agendamentos" style={linkStyle}>Os Meus Agendamentos</Link>
+            <Link to="/barbearias" className={linkClass}>Barbearias</Link>
+            <Link to="/meus-agendamentos" className={linkClass}>Os Meus Agendamentos</Link>
           </>
         )}
         {userRole === 'shopOwner' && (
           <>
-            <Link to="/dashboard" style={linkStyle}>O Meu Painel</Link>
+            <Link to="/dashboard" className={linkClass}>O Meu Painel</Link>
           </>
         )}
         {userRole === 'barber' && (
           <>
-            <Link to="/minha-agenda" style={linkStyle}>A Minha Agenda</Link>
+            <Link to="/minha-agenda" className={linkClass}>A Minha Agenda</Link>
           </>
         )}
         {userRole === 'superAdmin' && (
           <>
-            <Link to="/super-admin" style={linkStyle}>Painel Admin</Link>
+            <Link to="/super-admin" className={linkClass}>Painel Admin</Link>
           </>
         )}
         
-        <button onClick={handleLogout} style={{ marginLeft: '20px' }}>Logout</button>
-      </div>
+        <button onClick={handleLogout} className={isMobile ? linkClass : styles.button}>Logout</button>
+      </>
     );
   };
 
   return (
-    <nav style={navStyle}>
-      <Link to="/" style={{ ...linkStyle, fontWeight: 'bold' }}>
-        Agenda Barber
-      </Link>
-      {renderLinks()}
+    <nav className={styles.navbar}>
+      <div className={styles.container}>
+        <Link to="/" className={styles.brand}>
+          Agenda Barber
+        </Link>
+        
+        {/* Menu para Desktop */}
+        <div className={styles.linksDesktop}>
+          {renderLinks()}
+        </div>
+
+        {/* Botão Hambúrguer para Mobile */}
+        <button className={styles.hamburgerButton} onClick={() => setIsMenuOpen(!isMenuOpen)}>
+          <span className={styles.bar}></span>
+          <span className={styles.bar}></span>
+          <span className={styles.bar}></span>
+        </button>
+      </div>
+
+      {/* Menu Dropdown para Mobile */}
+      {isMenuOpen && (
+        <div className={styles.linksMobile}>
+          {renderLinks(true)}
+        </div>
+      )}
     </nav>
   );
 };

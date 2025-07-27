@@ -1,34 +1,26 @@
 // src/pages/LoginPage.jsx
 import React, { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext'; // O nosso hook para aceder à função de login
-import { useNavigate, Link } from 'react-router-dom'; // Para redirecionar após o login e usar o Link
+import { useAuth } from '../contexts/AuthContext';
+import { useNavigate, Link } from 'react-router-dom';
+import styles from './LoginPage.module.scss'; // Importamos os nossos novos estilos
 
 const LoginPage = () => {
-  // Estados para guardar os dados do formulário
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
-  // A obter a função de login do nosso Contexto
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
       setError('');
       setLoading(true);
-
-      // A função login devolve o 'UserCredential'
       const userCredential = await login(email, password);
-
-      // A partir do userCredential, podemos obter o token e as permissões (claims)
       const idTokenResult = await userCredential.user.getIdTokenResult(true);
       const userRole = idTokenResult.claims.role;
 
-      // Agora, redirecionamos com base na role
       if (userRole === 'superAdmin') {
         navigate('/super-admin');
       } else if (userRole === 'shopOwner') {
@@ -36,55 +28,64 @@ const LoginPage = () => {
       } else if (userRole === 'barber') {
         navigate('/minha-agenda');
       } else if (userRole === 'client') {
-        // Redireciona o cliente para o seu painel
         navigate('/barbearias');
       } else {
-        // Se não tiver uma role definida, vai para a página inicial
         navigate('/');
       }
-
     } catch (err) {
       setError('Falha ao fazer login. Verifique o seu e-mail e senha.');
       console.error(err);
     }
-
     setLoading(false);
   };
 
   return (
-    <div>
-      <h1>Login</h1>
-      {/* Mostra uma mensagem de erro, se houver */}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Email:</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
+    <div className={styles.pageContainer}>
+      <div className={styles.loginCard}>
+        <h1 className={styles.title}>Aceda à sua conta</h1>
+        
+        <form onSubmit={handleSubmit} className={styles.form}>
+          {error && <p className={styles.error}>{error}</p>}
+          
+          <div className={styles.formGroup}>
+            <label htmlFor="email" className={styles.label}>
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className={styles.input}
+            />
+          </div>
+          <div className={styles.formGroup}>
+            <label htmlFor="password" className={styles.label}>
+              Senha
+            </label>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className={styles.input}
+            />
+          </div>
+          <div>
+            <button 
+              disabled={loading} 
+              type="submit"
+              className={styles.button}
+            >
+              {loading ? 'A entrar...' : 'Entrar'}
+            </button>
+          </div>
+        </form>
+        <div className={styles.switchPageLink}>
+          <Link to="/register">Não tem uma conta? Registe-se</Link>
         </div>
-        <div>
-          <label>Senha:</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </div>
-        {/* O botão fica desativado enquanto o pedido está em andamento */}
-        <button disabled={loading} type="submit">
-          {loading ? 'A entrar...' : 'Entrar'}
-        </button>
-      </form>
-      
-      {/* Link para a página de registo */}
-      <div style={{ marginTop: '20px' }}>
-        <Link to="/register">Não tem uma conta? Registe-se</Link>
       </div>
     </div>
   );

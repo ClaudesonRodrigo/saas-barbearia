@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getAllBarbershops } from '../services/publicService';
+import styles from './BarbershopListPage.module.scss'; // Importamos os nossos novos estilos
 
 const BarbershopListPage = () => {
   const [barbershops, setBarbershops] = useState([]);
@@ -25,26 +26,24 @@ const BarbershopListPage = () => {
   }, []);
 
   return (
-    <div>
-      <h1>Barbearias Disponíveis</h1>
-      <p>Escolha uma barbearia abaixo para começar o seu agendamento.</p>
+    <div className={styles.pageContainer}>
+      <h1 className={styles.title}>Barbearias Disponíveis</h1>
+      <p className={styles.subtitle}>Escolha uma barbearia abaixo para começar o seu agendamento.</p>
 
       {error && <p style={{ color: 'red' }}>{error}</p>}
       
-      <hr style={{ margin: '20px 0' }} />
-
       {isLoading ? (
         <p>A carregar barbearias...</p>
       ) : barbershops.length === 0 ? (
         <p>Nenhuma barbearia disponível no momento.</p>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+        <div className={styles.listContainer}>
           {barbershops.map(shop => (
-            <div key={shop.id} style={{ border: '1px solid #ccc', padding: '15px', borderRadius: '5px' }}>
-              <h2>{shop.name}</h2>
-              <p>{shop.address}</p>
-              <Link to={`/agendar/${shop.slug}`}>
-                <button>Agendar Agora</button>
+            <div key={shop.id} className={styles.shopCard}>
+              <h2 className={styles.shopName}>{shop.name}</h2>
+              <p className={styles.shopAddress}>{shop.address}</p>
+              <Link to={`/agendar/${shop.slug}`} className={styles.button}>
+                Agendar Agora
               </Link>
             </div>
           ))}

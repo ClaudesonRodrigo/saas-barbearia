@@ -2,14 +2,14 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-// Importamos a nova função de cancelamento
 import { getClientAppointments, cancelClientAppointment } from '../services/publicService';
+import styles from './ClientDashboard.module.scss'; // Importamos os nossos novos estilos
 
 const ClientDashboard = () => {
   const [appointments, setAppointments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
-  const [message, setMessage] = useState(''); // Estado para mensagens de sucesso
+  const [message, setMessage] = useState('');
   
   const { currentUser } = useAuth();
 
@@ -33,7 +33,6 @@ const ClientDashboard = () => {
     fetchAppointments();
   }, [fetchAppointments]);
 
-  // 👇 NOVA FUNÇÃO PARA CANCELAR AGENDAMENTO 👇
   const handleCancel = async (barbershopId, appointmentId) => {
     if (!window.confirm("Tem a certeza que deseja cancelar este agendamento?")) {
       return;
@@ -44,7 +43,6 @@ const ClientDashboard = () => {
       const token = await currentUser.getIdToken();
       await cancelClientAppointment(barbershopId, appointmentId, token);
       setMessage("Agendamento cancelado com sucesso!");
-      // Atualiza a lista para remover o item cancelado
       fetchAppointments();
     } catch (err) {
       setError(err.message);
@@ -52,29 +50,28 @@ const ClientDashboard = () => {
   };
 
   return (
-    <div>
-      <h1>Os Meus Agendamentos</h1>
-      <p>Bem-vindo, {currentUser?.displayName}! Aqui está o seu histórico de agendamentos.</p>
+    <div className={styles.pageContainer}>
+      <header className={styles.header}>
+        <h1 className={styles.title}>Os Meus Agendamentos</h1>
+        <p className={styles.subtitle}>Bem-vindo, {currentUser?.displayName}! Aqui está o seu histórico de agendamentos.</p>
+      </header>
       
-      {message && <p style={{ color: 'green' }}>{message}</p>}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-
-      <hr style={{ margin: '20px 0' }} />
+      {message && <div className={`${styles.messageArea} ${styles.success}`}>{message}</div>}
+      {error && <div className={`${styles.messageArea} ${styles.error}`}>{error}</div>}
 
       <section>
         {isLoading ? <p>A carregar o seu histórico...</p> : 
           appointments.length === 0 ? <p>Você ainda não tem agendamentos.</p> : (
-            <ul style={{ listStyle: 'none', padding: 0 }}>
+            <ul className={styles.list}>
               {appointments.map(app => (
-                <li key={app.id} style={{ border: '1px solid #ccc', borderRadius: '5px', padding: '10px', margin: '10px 0' }}>
-                  <strong>{app.formattedDate} às {app.time}</strong>
-                  <br />
-                  <span>Serviço: {app.serviceName}</span>
-                  <br />
-                  {/* 👇 BOTÃO DE CANCELAR ADICIONADO 👇 */}
+                <li key={app.id} className={styles.appointmentCard}>
+                  <div className={styles.appointmentInfo}>
+                    <strong>{app.formattedDate} às {app.time}</strong>
+                    <span>Serviço: {app.serviceName}</span>
+                  </div>
                   <button 
                     onClick={() => handleCancel(app.barbershopId, app.id)} 
-                    style={{ marginTop: '10px' }}
+                    className={styles.cancelButton}
                   >
                     Cancelar Agendamento
                   </button>

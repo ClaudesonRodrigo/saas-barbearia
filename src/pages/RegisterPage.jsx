@@ -2,8 +2,9 @@
 
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext'; // 1. Importamos o useAuth
+import { useAuth } from '../contexts/AuthContext';
 import { registerClient } from '../services/publicService';
+import styles from './RegisterPage.module.scss'; // Importamos os nossos novos estilos
 
 const RegisterPage = () => {
   const [name, setName] = useState('');
@@ -13,7 +14,7 @@ const RegisterPage = () => {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   
-  const { login } = useAuth(); // 2. Obtemos a função de login do nosso contexto
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -23,66 +24,66 @@ const RegisterPage = () => {
     setMessage('');
 
     try {
-      // Primeiro, registamos o cliente no back-end
       await registerClient({ name, email, password });
-      
-      // 3. Se o registo for bem-sucedido, fazemos o login automaticamente
       await login(email, password);
-
-      // 4. E redirecionamos diretamente para a página de barbearias
       navigate('/barbearias');
-
     } catch (err) {
       setError(err.message);
       setLoading(false);
     }
-    // O setLoading(false) não é mais necessário aqui, pois a página irá navegar
   };
 
   return (
-    <div>
-      <h1>Criar Nova Conta</h1>
-      <p>Registe-se para agendar os seus serviços de forma mais rápida.</p>
+    <div className={styles.pageContainer}>
+      <div className={styles.loginCard}>
+        <h1 className={styles.title}>Criar Nova Conta</h1>
+        
+        {message && <p style={{ color: 'green' }}>{message}</p>}
+        {error && <p className={styles.error}>{error}</p>}
 
-      {message && <p style={{ color: 'green' }}>{message}</p>}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+        <form onSubmit={handleSubmit} className={styles.form}>
+          <div className={styles.formGroup}>
+            <label htmlFor="name" className={styles.label}>O seu Nome:</label>
+            <input
+              id="name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              className={styles.input}
+            />
+          </div>
+          <div className={styles.formGroup}>
+            <label htmlFor="email" className={styles.label}>O seu E-mail:</label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className={styles.input}
+            />
+          </div>
+          <div className={styles.formGroup}>
+            <label htmlFor="password" className={styles.label}>A sua Senha:</label>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={6}
+              className={styles.input}
+            />
+          </div>
+          <button disabled={loading} type="submit" className={styles.button}>
+            {loading ? 'A registar...' : 'Registar e Entrar'}
+          </button>
+        </form>
 
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>O seu Nome:</label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
+        <div className={styles.switchPageLink}>
+          <Link to="/login">Já tem uma conta? Faça login</Link>
         </div>
-        <div>
-          <label>O seu E-mail:</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label>A sua Senha:</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={6}
-          />
-        </div>
-        <button disabled={loading} type="submit">
-          {loading ? 'A registar...' : 'Registar e Entrar'}
-        </button>
-      </form>
-
-      <div style={{ marginTop: '20px' }}>
-        <Link to="/login">Já tem uma conta? Faça login</Link>
       </div>
     </div>
   );

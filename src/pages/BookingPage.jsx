@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getPublicBarbershopData, getAvailableSlots, createAppointment } from '../services/publicService';
+import styles from './BookingPage.module.scss'; // Importamos os nossos novos estilos
 
 const BookingPage = () => {
   const { slug } = useParams(); 
@@ -75,14 +76,12 @@ const BookingPage = () => {
     setError('');
     setBookingSuccess('');
     try {
-      // --- ATUALIZAÇÃO AQUI ---
-      // Adicionamos o 'servicePrice' ao objeto de dados
       const appointmentData = {
         barbershopId: barbershopData.shop.id,
         serviceId: selectedService.id,
         serviceName: selectedService.name,
         serviceDuration: selectedService.duration,
-        servicePrice: selectedService.price, // Adicionámos o preço
+        servicePrice: selectedService.price,
         barberId: selectedBarber.id,
         date: selectedDate,
         slot: selectedSlot,
@@ -91,123 +90,101 @@ const BookingPage = () => {
       };
       await createAppointment(appointmentData);
       setBookingSuccess(`Parabéns, ${clientName}! O seu horário com ${selectedBarber.name} foi confirmado.`);
-      setSelectedService(null);
-      setSelectedBarber(null);
-      setSelectedDate(getTodayString());
-      setSelectedSlot(null);
-      setClientName('');
-      setClientEmail('');
     } catch (err) { setError(err.message); } finally { setIsBooking(false); }
   };
 
-  if (loading) return <h1>A carregar...</h1>;
-  if (error && !bookingSuccess) return <h1 style={{ color: 'red' }}>Erro: {error}</h1>;
-  if (!barbershopData) return <h1>Barbearia não encontrada.</h1>;
+  if (loading) return <div className={styles.pageContainer}><p>A carregar...</p></div>;
+  if (error && !bookingSuccess) return <div className={styles.pageContainer}><h1 style={{ color: 'red' }}>Erro: {error}</h1></div>;
+  if (!barbershopData) return <div className={styles.pageContainer}><h1>Barbearia não encontrada.</h1></div>;
 
   const { shop, services, barbers } = barbershopData;
 
   if (bookingSuccess) {
     return (
-      <div>
+      <div className={styles.successMessage}>
         <h1>Agendamento Confirmado!</h1>
-        <p style={{ color: 'green' }}>{bookingSuccess}</p>
+        <p>{bookingSuccess}</p>
       </div>
     );
   }
 
   return (
-    <div>
-      <h1>{shop.name}</h1>
-      <p>Siga os passos abaixo para agendar o seu horário.</p>
-      <hr />
-      <section>
-        <h2>Passo 1: Escolha o seu serviço</h2>
-        <div>
-          {services.map(service => (
-            <button key={service.id} onClick={() => handleServiceSelect(service)} style={{ margin: '5px', padding: '10px', cursor: 'pointer', border: selectedService?.id === service.id ? '2px solid #007bff' : '1px solid #ccc', borderRadius: '5px' }}>
-              <strong>{service.name}</strong> <br />
-              R$ {Number(service.price).toFixed(2)} ({service.duration} min)
-            </button>
-          ))}
-        </div>
-      </section>
+    <div className={styles.pageContainer}>
+      <header className={styles.shopHeader}>
+        <h1 className={styles.shopName}>{shop.name}</h1>
+        <p className={styles.shopWelcome}>Siga os passos abaixo para agendar o seu horário.</p>
+      </header>
 
-      <hr />
-
-      {selectedService && (
-        <section>
-          <h2>Passo 2: Escolha o seu profissional</h2>
-          <div>
-            {barbers.map(barber => (
-              <button key={barber.id} onClick={() => handleBarberSelect(barber)} style={{ margin: '5px', padding: '10px', cursor: 'pointer', border: selectedBarber?.id === barber.id ? '2px solid #007bff' : '1px solid #ccc', borderRadius: '5px' }}>
-                {barber.name}
+      <div className={styles.bookingContainer}>
+        <div className={styles.step}>
+          <h2 className={styles.stepTitle}>Passo 1: Escolha o seu serviço</h2>
+          <div className={styles.selectionGrid}>
+            {services.map(service => (
+              <button key={service.id} onClick={() => handleServiceSelect(service)} className={`${styles.selectionButton} ${selectedService?.id === service.id ? styles.selected : ''}`}>
+                <strong>{service.name}</strong>
+                <span>R$ {Number(service.price).toFixed(2)} ({service.duration} min)</span>
               </button>
             ))}
           </div>
-        </section>
-      )}
+        </div>
 
-      <hr />
+        {selectedService && (
+          <div className={styles.step}>
+            <h2 className={styles.stepTitle}>Passo 2: Escolha o seu profissional</h2>
+            <div className={styles.selectionGrid}>
+              {barbers.map(barber => (
+                <button key={barber.id} onClick={() => handleBarberSelect(barber)} className={`${styles.selectionButton} ${selectedBarber?.id === barber.id ? styles.selected : ''}`}>
+                  {barber.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
-      {selectedBarber && (
-        <section>
-          <h2>Passo 3: Escolha a data</h2>
-          <input type="date" onChange={handleDateChange} value={selectedDate} min={getTodayString()} style={{ padding: '8px', fontSize: '1rem' }} />
-        </section>
-      )}
-      
-      {selectedDate && selectedBarber && selectedService && (
-        <section>
-          <hr />
-          <h2>Passo 4: Escolha o horário</h2>
-          {isLoadingSlots ? <p>A procurar horários disponíveis...</p> : 
-            availableSlots.length > 0 ? (
-              <div>
-                {availableSlots.map(slot => (
-                  <button key={slot} onClick={() => handleSlotSelect(slot)} style={{ margin: '5px', padding: '10px', cursor: 'pointer', border: selectedSlot === slot ? '2px solid #007bff' : '1px solid #ccc', borderRadius: '5px' }}>
-                    {slot}
-                  </button>
-                ))}
+        {selectedBarber && (
+          <div className={styles.step}>
+            <h2 className={styles.stepTitle}>Passo 3: Escolha a data</h2>
+            <input type="date" onChange={handleDateChange} value={selectedDate} min={getTodayString()} className={styles.dateInput} />
+          </div>
+        )}
+        
+        {selectedDate && selectedBarber && selectedService && (
+          <div className={styles.step}>
+            <h2 className={styles.stepTitle}>Passo 4: Escolha o horário</h2>
+            {isLoadingSlots ? <p>A procurar horários disponíveis...</p> : 
+              availableSlots.length > 0 ? (
+                <div className={styles.selectionGrid}>
+                  {availableSlots.map(slot => (
+                    <button key={slot} onClick={() => handleSlotSelect(slot)} className={`${styles.selectionButton} ${selectedSlot === slot ? styles.selected : ''}`}>
+                      {slot}
+                    </button>
+                  ))}
+                </div>
+              ) : <p>Nenhum horário disponível para este profissional neste dia. Por favor, escolha outra data ou profissional.</p>
+            }
+          </div>
+        )}
+        
+        {selectedSlot && (
+          <div className={`${styles.step} ${styles.confirmationSection}`}>
+            <h2 className={styles.stepTitle}>Passo 5: Os seus Dados</h2>
+            <p className={styles.confirmationSummary}>
+              A agendar <strong>{selectedService.name}</strong> com <strong>{selectedBarber.name}</strong> para <strong>{new Date(selectedDate).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</strong> às <strong>{selectedSlot}</strong>.
+            </p>
+            <form onSubmit={handleBookingSubmit} className={styles.form}>
+              <div className={styles.formGroup}>
+                <label className={styles.label}>O seu Nome:</label>
+                <input type="text" value={clientName} onChange={(e) => setClientName(e.target.value)} required readOnly={!!currentUser} className={styles.input} style={{ background: currentUser ? '#eee' : '#fff' }} />
               </div>
-            ) : <p>Nenhum horário disponível para este profissional neste dia. Por favor, escolha outra data ou profissional.</p>
-          }
-        </section>
-      )}
-      
-      {selectedSlot && (
-        <section>
-          <hr />
-          <h2>Passo 5: Os seus Dados</h2>
-          <p>
-            A agendar <strong>{selectedService.name}</strong> com <strong>{selectedBarber.name}</strong> para <strong>{new Date(selectedDate).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</strong> às <strong>{selectedSlot}</strong>.
-          </p>
-          <form onSubmit={handleBookingSubmit}>
-            <div>
-              <label>O seu Nome:</label>
-              <input 
-                type="text" 
-                value={clientName} 
-                onChange={(e) => setClientName(e.target.value)} 
-                required 
-                readOnly={!!currentUser}
-                style={{ background: currentUser ? '#eee' : '#fff' }}
-              />
-            </div>
-            <div>
-              <label>O seu E-mail:</label>
-              <input 
-                type="email" 
-                value={clientEmail} 
-                onChange={(e) => setClientEmail(e.target.value)} 
-                required 
-                readOnly={!!currentUser}
-                style={{ background: currentUser ? '#eee' : '#fff' }}
-              />
-            </div>
-            <button type="submit" disabled={isBooking}>{isBooking ? 'A confirmar...' : 'Confirmar Agendamento'}</button>
-          </form>
-        </section>
-      )}
+              <div className={styles.formGroup}>
+                <label className={styles.label}>O seu E-mail:</label>
+                <input type="email" value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} required readOnly={!!currentUser} className={styles.input} style={{ background: currentUser ? '#eee' : '#fff' }} />
+              </div>
+              <button type="submit" disabled={isBooking} className={styles.button}>{isBooking ? 'A confirmar...' : 'Confirmar Agendamento'}</button>
+            </form>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
