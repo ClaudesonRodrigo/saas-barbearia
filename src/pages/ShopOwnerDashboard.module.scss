@@ -3,8 +3,9 @@
 .pageContainer {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 1rem; /* Melhor para ecrãs pequenos */
-  background-color: #f9fafb;
+  padding: 1rem;
+  background-color: #111827; // Fundo escuro
+  color: #e5e7eb; // Texto claro
 
   @media (min-width: 768px) {
     padding: 2rem;
@@ -13,8 +14,15 @@
 
 .header {
   margin-bottom: 1rem;
-  h1 { font-size: 2rem; font-weight: bold; }
-  p { color: #6b7280; margin-top: 0.5rem; }
+  h1 {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #ffffff; // Título branco
+  }
+  p {
+    color: #9ca3af; // Texto secundário
+    margin-top: 0.5rem;
+  }
 }
 
 .settingsLink {
@@ -23,7 +31,9 @@
   color: #3b82f6;
   text-decoration: none;
   font-weight: 500;
-  &:hover { text-decoration: underline; }
+  &:hover {
+    text-decoration: underline;
+  }
 }
 
 .messageArea {
@@ -31,15 +41,21 @@
   padding: 1rem;
   border-radius: 0.5rem;
   font-weight: 500;
-  &.success { background-color: #dcfce7; color: #166534; }
-  &.error { background-color: #fee2e2; color: #991b1b; }
+  &.success {
+    background-color: #052e16; // Fundo verde escuro
+    color: #bbf7d0; // Texto verde claro
+  }
+  &.error {
+    background-color: #450a0a; // Fundo vermelho escuro
+    color: #fecaca; // Texto vermelho claro
+  }
 }
 
 .section {
-  background-color: #ffffff;
+  background-color: #1f2937; // Fundo dos cartões
   padding: 1.5rem;
   border-radius: 0.5rem;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  border: 1px solid #374151; // Borda subtil
   margin-bottom: 2.5rem;
 }
 
@@ -47,6 +63,7 @@
   font-size: 1.5rem;
   font-weight: bold;
   margin-bottom: 1.5rem;
+  color: #ffffff;
 }
 
 .form {
@@ -63,16 +80,24 @@
 .label {
   font-size: 0.875rem;
   font-weight: 500;
-  color: #4b5563;
+  color: #9ca3af;
   margin-bottom: 0.25rem;
 }
 
 .input {
   padding: 0.75rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid #4b5563;
   border-radius: 0.375rem;
   width: 100%;
-  box-sizing: border-box; /* Garante que o padding não "estoure" a caixa */
+  box-sizing: border-box;
+  background-color: #374151; // Fundo do input
+  color: #e5e7eb; // Texto do input
+
+  &:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
+  }
 }
 
 .button {
@@ -85,16 +110,23 @@
   cursor: pointer;
   transition: background-color 0.2s;
   align-self: flex-start;
-  white-space: nowrap; // Evita que o texto do botão quebre
+  white-space: nowrap;
 
-  &:hover { background-color: #2563eb; }
-  &:disabled { background-color: #93c5fd; cursor: not-allowed; }
+  &:hover {
+    background-color: #2563eb;
+  }
+  &:disabled {
+    background-color: #1e40af;
+    cursor: not-allowed;
+  }
 }
 
 .secondaryButton {
-  background-color: #e5e7eb;
-  color: #374151;
-  &:hover { background-color: #d1d5db; }
+  background-color: #4b5563;
+  color: #e5e7eb;
+  &:hover {
+    background-color: #6b7280;
+  }
 }
 
 .list {
@@ -105,12 +137,12 @@
 
 .listItem {
   display: flex;
-  flex-wrap: wrap; // Permite que os botões quebrem para a linha de baixo
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   padding: 1rem;
-  border-bottom: 1px solid #f3f4f6;
-  gap: 1rem; // Espaço entre o texto e os botões
+  border-bottom: 1px solid #374151;
+  gap: 1rem;
 
   &:last-child {
     border-bottom: none;
@@ -118,13 +150,13 @@
 }
 
 .itemInfo {
-  flex-grow: 1; // Faz o texto ocupar o máximo de espaço possível
-  min-width: 200px; // Evita que o texto seja esmagado pelos botões
-  word-break: break-word; // Quebra palavras longas se necessário
+  flex-grow: 1;
+  min-width: 200px;
+  word-break: break-word;
 }
 
 .listItemActions {
   display: flex;
   gap: 0.75rem;
-  flex-shrink: 0; // Impede que os botões encolham
+  flex-shrink: 0;
 }

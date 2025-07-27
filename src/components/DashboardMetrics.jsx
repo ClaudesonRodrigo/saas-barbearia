@@ -4,11 +4,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { getDashboardStats } from '../services/shopService';
 import { subDays, format } from 'date-fns';
+import styles from './DashboardMetrics.module.scss'; // Importamos os novos estilos
 
 const StatCard = ({ title, value }) => (
-  <div style={{ border: '1px solid #ccc', padding: '20px', borderRadius: '8px', textAlign: 'center', flex: 1 }}>
-    <h3 style={{ margin: 0, color: '#555' }}>{title}</h3>
-    <p style={{ fontSize: '2.5rem', margin: '10px 0', fontWeight: 'bold' }}>{value}</p>
+  <div className={styles.statCard}>
+    <h3 className={styles.statTitle}>{title}</h3>
+    <p className={styles.statValue}>{value}</p>
   </div>
 );
 
@@ -17,7 +18,6 @@ const DashboardMetrics = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
-  // Estados para controlar o intervalo de datas
   const [startDate, setStartDate] = useState(format(subDays(new Date(), 29), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
 
@@ -36,7 +36,7 @@ const DashboardMetrics = () => {
     } finally {
       setLoading(false);
     }
-  }, [currentUser, startDate, endDate]); // A busca agora depende das datas
+  }, [currentUser, startDate, endDate]);
 
   useEffect(() => {
     fetchStats();
@@ -44,14 +44,14 @@ const DashboardMetrics = () => {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h2>Resumo do Período</h2>
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <div>
+      <div className={styles.header}>
+        <h2 className={styles.title}>Resumo do Período</h2>
+        <div className={styles.dateFilters}>
+          <div className={styles.filterGroup}>
             <label htmlFor="startDate">De:</label>
             <input type="date" id="startDate" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
           </div>
-          <div>
+          <div className={styles.filterGroup}>
             <label htmlFor="endDate">Até:</label>
             <input type="date" id="endDate" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
           </div>
@@ -64,7 +64,7 @@ const DashboardMetrics = () => {
         <p style={{ color: 'red' }}>Erro ao carregar estatísticas: {error}</p>
       ) : stats && (
         <>
-          <div style={{ display: 'flex', gap: '20px', marginBottom: '30px' }}>
+          <div className={styles.statsGrid}>
             <StatCard 
               title="Faturação Total" 
               value={`R$ ${stats.totalRevenue.toFixed(2)}`} 
@@ -75,11 +75,11 @@ const DashboardMetrics = () => {
             />
           </div>
           
-          <h3>Serviços Mais Populares</h3>
+          <h3 className={styles.title} style={{ fontSize: '1.25rem' }}>Serviços Mais Populares</h3>
           {stats.popularServices.length > 0 ? (
-            <ul style={{ listStyle: 'none', padding: 0 }}>
+            <ul className={styles.popularList}>
               {stats.popularServices.map(service => (
-                <li key={service.name} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', borderBottom: '1px solid #eee' }}>
+                <li key={service.name} className={styles.popularListItem}>
                   <span>{service.name}</span>
                   <strong>{service.count} agendamentos</strong>
                 </li>

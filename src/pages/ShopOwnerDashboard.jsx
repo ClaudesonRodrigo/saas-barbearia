@@ -91,7 +91,7 @@ const ShopOwnerDashboard = () => {
                     <div className={styles.itemInfo}>
                       <strong>{app.time}</strong> - {app.clientName}
                       <br />
-                      <span style={{color: '#6b7280'}}>Serviço: {app.serviceName} ({app.serviceDuration} min)</span>
+                      <span style={{color: '#9ca3af'}}>Serviço: {app.serviceName} ({app.serviceDuration} min)</span>
                     </div>
                     <div className={styles.listItemActions}>
                       <button onClick={() => handleCancelAppointment(app.id)} className={`${styles.button} ${styles.secondaryButton}`}>
