@@ -1,33 +1,38 @@
 /* src/pages/HomePage.module.scss */
 
 .pageContainer {
-  background-color: #111827; // Fundo escuro do nosso tema
+  background-color: #111827;
   color: #e5e7eb;
-  min-height: 90vh;
-  display: flex;
-  align-items: center;
+}
+
+.section {
+  padding: 4rem 2rem;
+  text-align: center;
+
+  @media (min-width: 768px) {
+    padding: 6rem 2rem;
+  }
 }
 
 .hero {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem 4rem;
-  text-align: center;
+  min-height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .title {
   font-size: 3rem;
-  font-weight: 800; /* Extra bold */
+  font-weight: 800;
   color: #ffffff;
   line-height: 1.2;
-
   @media (min-width: 768px) {
-    font-size: 4rem;
+    font-size: 4.5rem;
   }
 }
 
 .highlight {
-  color: #3b82f6; // O nosso azul de destaque
+  color: #3b82f6;
 }
 
 .subtitle {
@@ -50,9 +55,66 @@
   text-decoration: none;
   border-radius: 0.5rem;
   transition: background-color 0.2s, transform 0.2s;
-
   &:hover {
     background-color: #2563eb;
     transform: translateY(-2px);
   }
+}
+
+.features {
+  background-color: #1f2937;
+}
+
+.sectionTitle {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #ffffff;
+  margin-bottom: 3rem;
+}
+
+.featuresGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.featureCard {
+  background-color: #374151;
+  padding: 2rem;
+  border-radius: 0.5rem;
+  border: 1px solid #4b5563;
+}
+
+.featureIcon {
+  font-size: 2.5rem;
+  color: #3b82f6;
+  margin-bottom: 1rem;
+}
+
+.featureTitle {
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #ffffff;
+  margin-bottom: 0.5rem;
+}
+
+.featureText {
+  color: #9ca3af;
+}
+
+.guarantee {
+  background-color: #052e16; // Verde escuro
+}
+
+.guaranteeCard {
+  max-width: 800px;
+  margin: 0 auto;
+  border: 1px solid #166534;
+  padding: 2rem;
+  border-radius: 0.5rem;
 }

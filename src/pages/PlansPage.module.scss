@@ -54,14 +54,18 @@
   transition: transform 0.4s ease, box-shadow 0.4s ease;
   transform-style: preserve-3d;
 
-  // --- CORREÇÃO AQUI ---
-  // Aplica o efeito 3D apenas em dispositivos com capacidade de hover (ex: desktop com rato)
   @media (hover: hover) {
     &:hover {
       transform: rotateY(10deg) rotateX(5deg) scale(1.05);
       box-shadow: 0 20px 30px rgba(0, 0, 0, 0.4);
     }
   }
+}
+
+.planIcon {
+  color: #3b82f6; // O nosso azul de destaque
+  margin-bottom: 1.5rem;
+  align-self: center; // Centraliza o ícone
 }
 
 .planName {

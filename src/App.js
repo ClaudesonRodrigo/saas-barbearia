@@ -60,7 +60,7 @@ function App() {
           <Route path="/agendar/:slug" element={<BookingPage />} />
           <Route path="/barbearias" element={<BarbershopListPage />} />
           <Route path="/payment-success" element={<PaymentSuccessPage />} />
-          {/* Rota principal atualizada para a nossa nova Landing Page */}
+          {/* Rota principal atualizada para usar a HomePage */}
           <Route path="/" element={<HomePage />} />
 
           {/* Rotas Protegidas */}
