@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getPublicBarbershopData, getAvailableSlots, createAppointment } from '../services/publicService';
-import styles from './BookingPage.module.scss'; // Importamos os nossos novos estilos
+import styles from './BookingPage.module.scss';
 
 const BookingPage = () => {
   const { slug } = useParams(); 
@@ -35,6 +35,13 @@ const BookingPage = () => {
       setClientEmail(currentUser.email || '');
     }
   }, [currentUser]);
+
+  // --- LÓGICA DO MAPA ---
+  // Construímos a query para o link do Google Maps
+  const mapQuery = barbershopData?.shop?.location?.address 
+    ? encodeURIComponent(`${barbershopData.shop.location.address}, ${barbershopData.shop.location.cep}`)
+    : '';
+  const mapUrl = `https://www.google.com/maps/search/?api=1&query=${mapQuery}`;
 
   const handleServiceSelect = (service) => { setSelectedService(service); setSelectedBarber(null); setSelectedSlot(null); };
   const handleBarberSelect = (barber) => { setSelectedBarber(barber); setSelectedSlot(null); };
@@ -114,6 +121,19 @@ const BookingPage = () => {
         <h1 className={styles.shopName}>{shop.name}</h1>
         <p className={styles.shopWelcome}>Siga os passos abaixo para agendar o seu horário.</p>
       </header>
+
+      <div className={styles.locationInfo}>
+        <p><strong>Endereço:</strong> {shop.location?.address}</p>
+        <p><strong>CEP:</strong> {shop.location?.cep}</p>
+        <p><strong>Ponto de Referência:</strong> {shop.location?.referencePoint}</p>
+        
+        {/* SECÇÃO DO MAPA ATUALIZADA PARA USAR UM LINK */}
+        {mapQuery && (
+          <a href={mapUrl} target="_blank" rel="noopener noreferrer" className={styles.mapButton}>
+            Ver no Mapa
+          </a>
+        )}
+      </div>
 
       <div className={styles.bookingContainer}>
         <div className={styles.step}>

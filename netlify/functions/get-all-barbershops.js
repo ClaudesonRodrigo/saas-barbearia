@@ -13,24 +13,21 @@ if (getApps().length === 0) {
 const db = getFirestore();
 
 exports.handler = async function(event, context) {
-  // Esta função só aceita requisições GET
   if (event.httpMethod !== 'GET') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
   try {
-    // 1. Buscamos a coleção 'barbershops'
     const barbershopsRef = db.collection('barbershops');
-    const snapshot = await barbershopsRef.where('status', '==', 'active').get(); // Mostra apenas barbearias ativas
+    const snapshot = await barbershopsRef.where('status', '==', 'active').get();
 
     if (snapshot.empty) {
       return {
         statusCode: 200,
-        body: JSON.stringify([]), // Retorna uma lista vazia se não houver barbearias
+        body: JSON.stringify([]),
       };
     }
 
-    // 2. Montamos uma lista simplificada com os dados públicos de cada barbearia
     const barbershops = [];
     snapshot.forEach(doc => {
       const data = doc.data();
@@ -38,7 +35,8 @@ exports.handler = async function(event, context) {
         id: doc.id,
         name: data.name,
         address: data.address,
-        slug: data.publicUrlSlug // O slug para construir o link de agendamento
+        slug: data.publicUrlSlug,
+        logoUrl: data.logoUrl || null // Adicionamos a URL do logo
       });
     });
 

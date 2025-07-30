@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getAllBarbershops } from '../services/publicService';
-import styles from './BarbershopListPage.module.scss'; // Importamos os nossos novos estilos
+import styles from './BarbershopListPage.module.scss';
 
 const BarbershopListPage = () => {
   const [barbershops, setBarbershops] = useState([]);
@@ -40,6 +40,14 @@ const BarbershopListPage = () => {
         <div className={styles.listContainer}>
           {barbershops.map(shop => (
             <div key={shop.id} className={styles.shopCard}>
+              <div className={styles.logoContainer}>
+                {shop.logoUrl ? (
+                  <img src={shop.logoUrl} alt={`Logo de ${shop.name}`} className={styles.shopLogo} />
+                ) : (
+                  // Placeholder se não houver logo
+                  <span>✂️</span>
+                )}
+              </div>
               <h2 className={styles.shopName}>{shop.name}</h2>
               <p className={styles.shopAddress}>{shop.address}</p>
               <Link to={`/agendar/${shop.slug}`} className={styles.button}>
