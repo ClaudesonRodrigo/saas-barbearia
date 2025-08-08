@@ -37,8 +37,17 @@ exports.handler = async function(event, context) {
     const barbershopId = shopDoc.id;
     const shopData = shopDoc.data();
 
-    const dailyBusinessHours = shopData.businessHours || { start: '09:00', end: '18:00' };
-    const lunchBreak = shopData.lunchBreak || { start: '12:00', end: '13:00' };
+    // --- LÓGICA DE SEGURANÇA REFORÇADA ---
+    // Verificamos cada campo de horário individualmente e usamos um valor padrão se ele não existir.
+    const dailyBusinessHours = {
+      start: shopData.businessHours?.start || '09:00',
+      end: shopData.businessHours?.end || '18:00',
+    };
+    const lunchBreak = {
+      start: shopData.lunchBreak?.start || '12:00',
+      end: shopData.lunchBreak?.end || '13:00',
+    };
+    // --- FIM DA LÓGICA DE SEGURANÇA ---
 
     const selectedDayStart = fromZonedTime(`${date}T00:00:00`, TIME_ZONE);
     const selectedDayEnd = fromZonedTime(`${date}T23:59:59`, TIME_ZONE);
@@ -59,7 +68,6 @@ exports.handler = async function(event, context) {
 
     const availableSlots = [];
     
-    // --- CORREÇÃO NA CRIAÇÃO DAS DATAS ---
     const [startHour, startMinute] = dailyBusinessHours.start.split(':');
     let currentTime = fromZonedTime(new Date(date), TIME_ZONE);
     currentTime.setHours(startHour, startMinute, 0, 0);
@@ -75,7 +83,9 @@ exports.handler = async function(event, context) {
     const [lunchEndHour, lunchEndMinute] = lunchBreak.end.split(':');
     let lunchEnd = fromZonedTime(new Date(date), TIME_ZONE);
     lunchEnd.setHours(lunchEndHour, lunchEndMinute, 0, 0);
-    // --- FIM DA CORREÇÃO ---
+
+    const now = toZonedTime(new Date(), TIME_ZONE);
+    const isToday = format(now, 'yyyy-MM-dd') === date;
 
     while (currentTime < dayEnd) {
       const slotStart = currentTime;
@@ -83,8 +93,9 @@ exports.handler = async function(event, context) {
       
       const isDuringLunch = slotStart.getTime() < lunchEnd.getTime() && slotEnd.getTime() > lunchStart.getTime();
       const isAfterWork = slotEnd > dayEnd;
+      const isPastTime = isToday && slotStart < now;
       
-      if (!isDuringLunch && !isAfterWork) {
+      if (!isDuringLunch && !isAfterWork && !isPastTime) {
         const isBooked = bookedSlots.some(bookedSlot => {
             const bookedStart = bookedSlot.start;
             const bookedEnd = new Date(bookedStart.getTime() + bookedSlot.duration * 60000); 
