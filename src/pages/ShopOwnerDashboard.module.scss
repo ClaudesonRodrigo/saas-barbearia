@@ -17,10 +17,10 @@
   h1 {
     font-size: 2rem;
     font-weight: bold;
-    color: #ffffff; // Título branco
+    color: #ffffff;
   }
   p {
-    color: #9ca3af; // Texto secundário
+    color: #9ca3af;
     margin-top: 0.5rem;
   }
 }
@@ -42,20 +42,20 @@
   border-radius: 0.5rem;
   font-weight: 500;
   &.success {
-    background-color: #052e16; // Fundo verde escuro
-    color: #bbf7d0; // Texto verde claro
+    background-color: #052e16;
+    color: #bbf7d0;
   }
   &.error {
-    background-color: #450a0a; // Fundo vermelho escuro
-    color: #fecaca; // Texto vermelho claro
+    background-color: #450a0a;
+    color: #fecaca;
   }
 }
 
 .section {
-  background-color: #1f2937; // Fundo dos cartões
+  background-color: #1f2937;
   padding: 1.5rem;
   border-radius: 0.5rem;
-  border: 1px solid #374151; // Borda subtil
+  border: 1px solid #374151;
   margin-bottom: 2.5rem;
 }
 
@@ -63,7 +63,6 @@
   font-size: 1.5rem;
   font-weight: bold;
   margin-bottom: 1.5rem;
-  color: #ffffff;
 }
 
 .form {
@@ -90,14 +89,8 @@
   border-radius: 0.375rem;
   width: 100%;
   box-sizing: border-box;
-  background-color: #374151; // Fundo do input
-  color: #e5e7eb; // Texto do input
-
-  &:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
-  }
+  background-color: #374151;
+  color: #e5e7eb;
 }
 
 .button {
