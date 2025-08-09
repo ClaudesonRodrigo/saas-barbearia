@@ -16,13 +16,11 @@ const authAdmin = getAuth();
 const db = getFirestore();
 
 exports.handler = async function(event, context) {
-  // Esta função só aceita requisições PUT (padrão para atualização)
   if (event.httpMethod !== 'PUT') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
   try {
-    // --- LÓGICA DE SEGURANÇA ---
     const token = event.headers.authorization.split("Bearer ")[1];
     const decodedToken = await authAdmin.verifyIdToken(token);
     const { role, barbershopId } = decodedToken;
@@ -30,31 +28,31 @@ exports.handler = async function(event, context) {
     if (role !== 'shopOwner' || !barbershopId) {
       return { statusCode: 403, body: JSON.stringify({ message: "Acesso negado." }) };
     }
-    // --- FIM DA LÓGICA DE SEGURANÇA ---
 
-    // Pegamos o ID do serviço que queremos atualizar, que virá na URL
     const serviceId = event.path.split("/").pop();
-    
-    // Pegamos os novos dados do serviço, que virão no corpo da requisição
-    const { name, price, duration } = JSON.parse(event.body);
+    // Agora aceitamos um imageUrl opcional
+    const { name, price, duration, imageUrl } = JSON.parse(event.body);
 
-    if (!serviceId) {
-      return { statusCode: 400, body: JSON.stringify({ message: "ID do serviço não fornecido." }) };
-    }
-
-    if (!name || !price || !duration) {
+    if (!serviceId || !name || !price || !duration) {
       return { statusCode: 400, body: JSON.stringify({ message: "Dados do serviço incompletos." }) };
     }
 
-    // Montamos a referência para o documento que queremos atualizar
     const serviceRef = db.collection('barbershops').doc(barbershopId).collection('services').doc(serviceId);
     
-    // Atualizamos o documento com os novos dados
-    await serviceRef.update({
+    // Construímos o objeto de atualização dinamicamente
+    const dataToUpdate = {
       name,
       price: Number(price),
       duration: Number(duration),
-    });
+    };
+
+    // Adicionamos o imageUrl apenas se ele for fornecido
+    // Se for 'null', ele irá remover a imagem existente
+    if (imageUrl !== undefined) {
+      dataToUpdate.imageUrl = imageUrl;
+    }
+    
+    await serviceRef.update(dataToUpdate);
 
     return { 
       statusCode: 200, 
