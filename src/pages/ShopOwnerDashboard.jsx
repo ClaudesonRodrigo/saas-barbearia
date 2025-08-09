@@ -10,7 +10,7 @@ import styles from './ShopOwnerDashboard.module.scss'; // Importamos os nossos n
 
 const ShopOwnerDashboard = () => {
   // --- Estados para SERVIÇOS ---
-  const [serviceName, setServiceName] = useState('');
+  const [serviceName, setServiceName] useState('');
   const [price, setPrice] = useState('');
   const [duration, setDuration] = useState('');
   const [editingService, setEditingService] = useState(null);
