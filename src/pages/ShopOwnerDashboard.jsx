@@ -110,19 +110,19 @@ const ShopOwnerDashboard = () => {
 
   const handleDelete = async (serviceId) => { if (!window.confirm("Tem certeza que deseja excluir este serviço?")) { return; } try { setMessage(''); setError(''); const token = await currentUser.getIdToken(); await deleteService(serviceId, token); fetchServices(); setMessage("Serviço deletado com sucesso!"); } catch (err) { setError(err.message); } };
 
-  // --- Lógica para BARBEIROS (sem alterações) ---
-  const fetchBarbers = useCallback(async () => { /* ...código existente... */ }, [currentUser]);
+  // --- Lógica para BARBEIROS ---
+  const fetchBarbers = useCallback(async () => { if (!currentUser) return; setIsLoadingBarbers(true); try { const token = await currentUser.getIdToken(); const data = await getBarbers(token); setBarbers(data); } catch (err) { setError(err.message); } finally { setIsLoadingBarbers(false); } }, [currentUser]);
   useEffect(() => { fetchBarbers(); }, [fetchBarbers]);
-  const handleBarberEditClick = (barber) => { /* ...código existente... */ };
-  const cancelBarberEdit = () => { /* ...código existente... */ };
-  const handleBarberSubmit = async (e) => { /* ...código existente... */ };
-  const handleDeleteBarber = async (barberId) => { /* ...código existente... */ };
+  const handleBarberEditClick = (barber) => { setEditingBarber(barber); setBarberName(barber.name); setBarberEmail(barber.email); };
+  const cancelBarberEdit = () => { setEditingBarber(null); setBarberName(''); setBarberEmail(''); };
+  const handleBarberSubmit = async (e) => { e.preventDefault(); setIsLoadingBarbersForm(true); setMessage(''); setError(''); try { const token = await currentUser.getIdToken(); const barberData = { name: barberName, email: barberEmail }; if (editingBarber) { await updateBarber(editingBarber.id, barberData, token); setMessage("Dados do barbeiro atualizados com sucesso!"); } else { const result = await createBarber(barberData, token); setMessage(`${result.message} Senha provisória: ${result.temporaryPassword}`); } cancelBarberEdit(); fetchBarbers(); } catch (err) { setError(err.message); } finally { setIsLoadingBarbersForm(false); } };
+  const handleDeleteBarber = async (barberId) => { if (!window.confirm("Tem certeza que deseja excluir este barbeiro? Esta ação não pode ser desfeita.")) { return; } try { setMessage(''); setError(''); const token = await currentUser.getIdToken(); await deleteBarber(barberId, token); setMessage("Barbeiro excluído com sucesso!"); fetchBarbers(); } catch (err) { setError(err.message); } };
 
-  // --- Lógica para a AGENDA (sem alterações) ---
-  const fetchAppointments = useCallback(async (date) => { /* ...código existente... */ }, [currentUser]);
+  // --- Lógica para a AGENDA ---
+  const fetchAppointments = useCallback(async (date) => { if (!currentUser) return; setIsLoadingAppointments(true); setMessage(''); setError(''); try { const token = await currentUser.getIdToken(); const data = await getDailyAppointments(date, token); setAppointments(data); } catch (err) { setError(err.message); setAppointments([]); } finally { setIsLoadingAppointments(false); } }, [currentUser]);
   useEffect(() => { fetchAppointments(selectedAgendaDate); }, [selectedAgendaDate, fetchAppointments]);
   const handleAgendaDateChange = (e) => { setSelectedAgendaDate(e.target.value); };
-  const handleCancelAppointment = async (appointmentId) => { /* ...código existente... */ };
+  const handleCancelAppointment = async (appointmentId) => { if (!window.confirm("Tem certeza que deseja cancelar este agendamento?")) { return; } try { setMessage(''); setError(''); const token = await currentUser.getIdToken(); await cancelAppointment(appointmentId, token); setMessage("Agendamento cancelado com sucesso!"); fetchAppointments(selectedAgendaDate); } catch (err) { setError(err.message); } };
 
   return (
     <div className={styles.pageContainer}>
@@ -143,7 +143,32 @@ const ShopOwnerDashboard = () => {
 
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>Agenda do Dia</h2>
-        {/* ...código da agenda... */}
+        <div className={styles.formGroup}>
+          <label htmlFor="agenda-date" className={styles.label}>Ver agendamentos para o dia:</label>
+          <input id="agenda-date" type="date" value={selectedAgendaDate} onChange={handleAgendaDateChange} className={styles.input} />
+        </div>
+        <div>
+          {isLoadingAppointments ? <p>A carregar agenda...</p> : 
+            appointments.length === 0 ? <p>Nenhum agendamento para este dia.</p> : (
+              <ul className={styles.list}>
+                {appointments.map(app => (
+                  <li key={app.id} className={styles.listItem}>
+                    <div className={styles.itemInfo}>
+                      <strong>{app.time}</strong> - {app.clientName}
+                      <br />
+                      <span style={{color: '#9ca3af'}}>Serviço: {app.serviceName} ({app.serviceDuration} min)</span>
+                    </div>
+                    <div className={styles.listItemActions}>
+                      <button onClick={() => handleCancelAppointment(app.id)} className={`${styles.button} ${styles.secondaryButton}`}>
+                        Cancelar
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )
+          }
+        </div>
       </section>
 
       <section className={styles.section}>
@@ -162,7 +187,6 @@ const ShopOwnerDashboard = () => {
             <input type="number" value={duration} onChange={(e) => setDuration(e.target.value)} className={styles.input} required />
           </div>
           
-          {/* NOVO CAMPO DE UPLOAD DE IMAGEM */}
           <div className={styles.formGroup}>
             <label className={styles.label}>Imagem do Serviço:</label>
             {serviceImageUrl && <img src={serviceImageUrl} alt="Pré-visualização" style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '8px', marginBottom: '1rem' }} />}
@@ -196,7 +220,28 @@ const ShopOwnerDashboard = () => {
 
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>{editingBarber ? 'Editar Barbeiro' : 'Gerir Barbeiros'}</h2>
-        {/* ...código dos barbeiros... */}
+        <form onSubmit={handleBarberSubmit} className={styles.form}>
+          <div className={styles.formGroup}><label className={styles.label}>Nome do Barbeiro:</label><input type="text" value={barberName} onChange={(e) => setBarberName(e.target.value)} required className={styles.input} /></div>
+          <div className={styles.formGroup}><label className={styles.label}>E-mail do Barbeiro:</label><input type="email" value={barberEmail} onChange={(e) => setBarberEmail(e.target.value)} required className={styles.input} /></div>
+          <div>
+            <button type="submit" disabled={isLoadingBarbersForm} className={styles.button}>{isLoadingBarbersForm ? 'A guardar...' : (editingBarber ? 'Guardar Alterações' : 'Adicionar Barbeiro')}</button>
+            {editingBarber && (<button type="button" onClick={cancelBarberEdit} disabled={isLoadingBarbersForm} className={`${styles.button} ${styles.secondaryButton}`} style={{ marginLeft: '10px' }}>Cancelar</button>)}
+          </div>
+        </form>
+        <h3 style={{ marginTop: '30px' }}>Barbeiros Registados</h3>
+        {isLoadingBarbers ? (<p>A carregar barbeiros...</p>) : (
+          <ul className={styles.list}>
+            {barbers.map(barber => (
+              <li key={barber.id} className={styles.listItem}>
+                <div className={styles.itemInfo}><strong>{barber.name}</strong> - {barber.email}</div>
+                <div className={styles.listItemActions}>
+                  <button onClick={() => handleBarberEditClick(barber)} className={`${styles.button} ${styles.secondaryButton}`}>Editar</button>
+                  <button onClick={() => handleDeleteBarber(barber.id)} className={`${styles.button} ${styles.secondaryButton}`}>Excluir</button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}''
       </section>
     </div>
   );
