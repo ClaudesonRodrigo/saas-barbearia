@@ -1,6 +1,6 @@
 // src/pages/BookingPage.jsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getPublicBarbershopData, getAvailableSlots, createAppointment } from '../services/publicService';
@@ -16,7 +16,7 @@ const BookingPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const [selectedService, setSelectedService] = useState(null);
+  const [selectedServices, setSelectedServices] = useState([]);
   const [selectedBarber, setSelectedBarber] = useState(null);
   const [selectedDate, setSelectedDate] = useState(getTodayString());
   const [selectedSlot, setSelectedSlot] = useState(null);
@@ -29,6 +29,17 @@ const BookingPage = () => {
   const [isBooking, setIsBooking] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState('');
   
+  const { totalPrice, totalDuration } = useMemo(() => {
+    return selectedServices.reduce(
+      (acc, service) => {
+        acc.totalPrice += service.price;
+        acc.totalDuration += service.duration;
+        return acc;
+      },
+      { totalPrice: 0, totalDuration: 0 }
+    );
+  }, [selectedServices]);
+
   useEffect(() => {
     if (currentUser) {
       setClientName(currentUser.displayName || '');
@@ -36,14 +47,23 @@ const BookingPage = () => {
     }
   }, [currentUser]);
 
-  // --- LÓGICA DO MAPA ---
-  // Construímos a query para o link do Google Maps
   const mapQuery = barbershopData?.shop?.location?.address 
     ? encodeURIComponent(`${barbershopData.shop.location.address}, ${barbershopData.shop.location.cep}`)
     : '';
   const mapUrl = `https://www.google.com/maps/search/?api=1&query=${mapQuery}`;
 
-  const handleServiceSelect = (service) => { setSelectedService(service); setSelectedBarber(null); setSelectedSlot(null); };
+  const handleServiceSelect = (service) => {
+    setSelectedServices(prev => {
+      const isSelected = prev.some(s => s.id === service.id);
+      if (isSelected) {
+        return prev.filter(s => s.id !== service.id);
+      } else {
+        return [...prev, service];
+      }
+    });
+    setSelectedSlot(null);
+  };
+
   const handleBarberSelect = (barber) => { setSelectedBarber(barber); setSelectedSlot(null); };
   const handleDateChange = (event) => { setSelectedDate(event.target.value); setSelectedSlot(null); };
   const handleSlotSelect = (slot) => { setSelectedSlot(slot); };
@@ -61,13 +81,13 @@ const BookingPage = () => {
   }, [slug]);
 
   useEffect(() => {
-    if (selectedService && selectedDate && selectedBarber) {
+    if (selectedServices.length > 0 && selectedDate && selectedBarber) {
       const fetchSlots = async () => {
         setIsLoadingSlots(true);
         setAvailableSlots([]);
         setError('');
         try {
-          const slots = await getAvailableSlots(slug, selectedDate, selectedService.duration, selectedBarber.id);
+          const slots = await getAvailableSlots(slug, selectedDate, totalDuration, selectedBarber.id);
           setAvailableSlots(slots);
         } catch (err) { setError(err.message); } finally { setIsLoadingSlots(false); }
       };
@@ -75,7 +95,7 @@ const BookingPage = () => {
     } else {
       setAvailableSlots([]);
     }
-  }, [selectedService, selectedDate, selectedBarber, slug]);
+  }, [selectedServices, totalDuration, selectedDate, selectedBarber, slug]);
 
   const handleBookingSubmit = async (e) => {
     e.preventDefault();
@@ -85,10 +105,10 @@ const BookingPage = () => {
     try {
       const appointmentData = {
         barbershopId: barbershopData.shop.id,
-        serviceId: selectedService.id,
-        serviceName: selectedService.name,
-        serviceDuration: selectedService.duration,
-        servicePrice: selectedService.price,
+        services: selectedServices.map(s => ({ id: s.id, name: s.name, price: s.price, duration: s.duration, imageUrl: s.imageUrl })),
+        serviceName: selectedServices.map(s => s.name).join(', '),
+        serviceDuration: totalDuration,
+        servicePrice: totalPrice,
         barberId: selectedBarber.id,
         date: selectedDate,
         slot: selectedSlot,
@@ -126,8 +146,6 @@ const BookingPage = () => {
         <p><strong>Endereço:</strong> {shop.location?.address}</p>
         <p><strong>CEP:</strong> {shop.location?.cep}</p>
         <p><strong>Ponto de Referência:</strong> {shop.location?.referencePoint}</p>
-        
-        {/* SECÇÃO DO MAPA ATUALIZADA PARA USAR UM LINK */}
         {mapQuery && (
           <a href={mapUrl} target="_blank" rel="noopener noreferrer" className={styles.mapButton}>
             Ver no Mapa
@@ -137,18 +155,30 @@ const BookingPage = () => {
 
       <div className={styles.bookingContainer}>
         <div className={styles.step}>
-          <h2 className={styles.stepTitle}>Passo 1: Escolha o seu serviço</h2>
+          <h2 className={styles.stepTitle}>Passo 1: Escolha os seus serviços</h2>
           <div className={styles.selectionGrid}>
-            {services.map(service => (
-              <button key={service.id} onClick={() => handleServiceSelect(service)} className={`${styles.selectionButton} ${selectedService?.id === service.id ? styles.selected : ''}`}>
-                <strong>{service.name}</strong>
-                <span>R$ {Number(service.price).toFixed(2)} ({service.duration} min)</span>
-              </button>
-            ))}
+            {services.map(service => {
+              const isSelected = selectedServices.some(s => s.id === service.id);
+              return (
+                <div key={service.id} onClick={() => handleServiceSelect(service)} className={`${styles.selectionButton} ${isSelected ? styles.selected : ''}`}>
+                  <div className={styles.serviceImageContainer}>
+                    {service.imageUrl ? (
+                      <img src={service.imageUrl} alt={service.name} className={styles.serviceImage} />
+                    ) : (
+                      <span>✂️</span>
+                    )}
+                  </div>
+                  <div className={styles.serviceInfo}>
+                    <strong>{service.name}</strong>
+                    <span>R$ {Number(service.price).toFixed(2)} ({service.duration} min)</span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
-        {selectedService && (
+        {selectedServices.length > 0 && (
           <div className={styles.step}>
             <h2 className={styles.stepTitle}>Passo 2: Escolha o seu profissional</h2>
             <div className={styles.selectionGrid}>
@@ -168,7 +198,7 @@ const BookingPage = () => {
           </div>
         )}
         
-        {selectedDate && selectedBarber && selectedService && (
+        {selectedDate && selectedBarber && selectedServices.length > 0 && (
           <div className={styles.step}>
             <h2 className={styles.stepTitle}>Passo 4: Escolha o horário</h2>
             {isLoadingSlots ? <p>A procurar horários disponíveis...</p> : 
@@ -189,7 +219,9 @@ const BookingPage = () => {
           <div className={`${styles.step} ${styles.confirmationSection}`}>
             <h2 className={styles.stepTitle}>Passo 5: Os seus Dados</h2>
             <p className={styles.confirmationSummary}>
-              A agendar <strong>{selectedService.name}</strong> com <strong>{selectedBarber.name}</strong> para <strong>{new Date(selectedDate).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</strong> às <strong>{selectedSlot}</strong>.
+              A agendar <strong>{selectedServices.map(s => s.name).join(' + ')}</strong> com <strong>{selectedBarber.name}</strong> para <strong>{new Date(selectedDate).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</strong> às <strong>{selectedSlot}</strong>.
+              <br/>
+              <strong>Total: R$ {totalPrice.toFixed(2)} ({totalDuration} min)</strong>
             </p>
             <form onSubmit={handleBookingSubmit} className={styles.form}>
               <div className={styles.formGroup}>
