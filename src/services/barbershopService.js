@@ -1,52 +1,74 @@
 // src/services/barbershopService.js
 
-// Endpoints das nossas funções
-const CREATE_API_ENDPOINT = '/.netlify/functions/create-barbershop';
-const GET_API_ENDPOINT = '/.netlify/functions/get-barbershops';
+// LÓGICA CENTRALIZADA: Uma única base para a URL da nossa API
+const API_BASE_URL = '/.netlify/functions';
 
-
-export const createBarbershop = async (shopData) => {
-  // O shopData será um objeto com { shopName, ownerEmail, ownerPassword }
+/**
+ * Função genérica e centralizada para fazer chamadas à nossa API Netlify.
+ * Ela cuida de adicionar o token de autorização e tratar as respostas.
+ * @param {string} endpoint - O nome da função a ser chamada (ex: 'create-barbershop').
+ * @param {string} token - O token JWT do usuário logado.
+ * @param {object} options - Opções da requisição fetch (method, body, etc.).
+ * @returns {Promise<any>} - A resposta da API em formato JSON.
+ */
+const fetchApi = async (endpoint, token, options = {}) => {
   try {
-    const response = await fetch(CREATE_API_ENDPOINT, {
-      method: 'POST',
+    const response = await fetch(`${API_BASE_URL}/${endpoint}`, {
+      ...options,
       headers: {
+        ...options.headers,
+        // ESSENCIAL: Envia o token para o backend validar a permissão
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(shopData),
     });
 
-    const data = await response.json();
-
+    // Se a resposta do servidor não for "ok", lança um erro com a mensagem do backend.
     if (!response.ok) {
-      // Se a resposta não for 2xx, lança um erro com a mensagem do backend
-      throw new Error(data.message || 'Falha ao criar barbearia.');
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Ocorreu um erro na solicitação à API.');
     }
 
-    return data;
-
-  } catch (error) {
-    console.error("Erro no serviço createBarbershop:", error);
-    // Re-lança o erro para que o componente que chamou possa tratá-lo
-    throw error;
-  }
-}; // Fim da função createBarbershop
-
-
-export const getBarbershops = async () => {
-  try {
-    // Como é uma busca (GET), não precisamos de 'headers' ou 'body'
-    const response = await fetch(GET_API_ENDPOINT);
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || 'Falha ao buscar as barbearias.');
+    // Se a resposta for bem-sucedida, mas vazia (como em um DELETE), retorna sucesso.
+    if (response.status === 204) {
+      return { success: true };
     }
-
-    return data; // Retorna a lista de barbearias
+    
+    // Retorna os dados da resposta em JSON.
+    return await response.json();
 
   } catch (error) {
-    console.error("Erro no serviço getBarbershops:", error);
+    console.error(`Erro no serviço ao chamar o endpoint ${endpoint}:`, error);
+    // Re-lança o erro para que o componente possa capturá-lo.
     throw error;
   }
-}; // Fim da função getBarbershops
+};
+
+// --- FUNÇÕES DE SERVIÇO PARA O SUPER ADMIN ---
+
+export const createBarbershop = (data, token) => {
+  return fetchApi('create-barbershop', token, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+};
+
+export const getBarbershops = (token) => {
+  return fetchApi('read-barbershops', token, {
+    method: 'GET',
+  });
+};
+
+export const updateBarbershop = (shopId, updates, token) => {
+  return fetchApi('update-barbershop', token, {
+    method: 'PUT',
+    body: JSON.stringify({ shopId, updates }),
+  });
+};
+
+export const deleteBarbershop = (shopId, token) => {
+  return fetchApi('delete-barbershop', token, {
+    method: 'DELETE',
+    body: JSON.stringify({ shopId }),
+  });
+};
