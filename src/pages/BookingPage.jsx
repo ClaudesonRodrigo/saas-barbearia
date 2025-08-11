@@ -1,6 +1,6 @@
 // src/pages/BookingPage.jsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getPublicBarbershopData, getAvailableSlots, createAppointment } from '../services/publicService';
@@ -9,26 +9,37 @@ import styles from './BookingPage.module.scss';
 const BookingPage = () => {
   const { slug } = useParams(); 
   const { currentUser } = useAuth();
-  
+
   const getTodayString = () => new Date().toISOString().split('T')[0];
-  
+
   const [barbershopData, setBarbershopData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const [selectedService, setSelectedService] = useState(null);
+  const [selectedServices, setSelectedServices] = useState([]);
   const [selectedBarber, setSelectedBarber] = useState(null);
   const [selectedDate, setSelectedDate] = useState(getTodayString());
   const [selectedSlot, setSelectedSlot] = useState(null);
 
   const [availableSlots, setAvailableSlots] = useState([]);
   const [isLoadingSlots, setIsLoadingSlots] = useState(false);
-  
+
   const [clientName, setClientName] = useState('');
   const [clientEmail, setClientEmail] = useState('');
   const [isBooking, setIsBooking] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState('');
-  
+
+  const { totalPrice, totalDuration } = useMemo(() => {
+    return selectedServices.reduce(
+      (acc, service) => {
+        acc.totalPrice += service.price;
+        acc.totalDuration += service.duration;
+        return acc;
+      },
+      { totalPrice: 0, totalDuration: 0 }
+    );
+  }, [selectedServices]);
+
   useEffect(() => {
     if (currentUser) {
       setClientName(currentUser.displayName || '');
@@ -36,16 +47,29 @@ const BookingPage = () => {
     }
   }, [currentUser]);
 
-  // --- LÓGICA DO MAPA ---
-  // Construímos a query para o link do Google Maps
   const mapQuery = barbershopData?.shop?.location?.address 
     ? encodeURIComponent(`${barbershopData.shop.location.address}, ${barbershopData.shop.location.cep}`)
     : '';
   const mapUrl = `https://www.google.com/maps/search/?api=1&query=${mapQuery}`;
 
-  const handleServiceSelect = (service) => { setSelectedService(service); setSelectedBarber(null); setSelectedSlot(null); };
-  const handleBarberSelect = (barber) => { setSelectedBarber(barber); setSelectedSlot(null); };
-  const handleDateChange = (event) => { setSelectedDate(event.target.value); setSelectedSlot(null); };
+  const handleServiceSelect = (service) => {
+    setSelectedServices(prev => {
+      const isSelected = prev.some(s => s.id === service.id);
+      setSelectedSlot(null);
+      return isSelected ? prev.filter(s => s.id !== service.id) : [...prev, service];
+    });
+  };
+
+  const handleBarberSelect = (barber) => { 
+    setSelectedBarber(barber); 
+    setSelectedSlot(null); 
+  };
+
+  const handleDateChange = (event) => { 
+    setSelectedDate(event.target.value); 
+    setSelectedSlot(null); 
+  };
+
   const handleSlotSelect = (slot) => { setSelectedSlot(slot); };
 
   useEffect(() => {
@@ -55,27 +79,35 @@ const BookingPage = () => {
           const data = await getPublicBarbershopData(slug);
           setBarbershopData(data);
         }
-      } catch (err) { setError(err.message); } finally { setLoading(false); }
+      } catch (err) { 
+        setError(err.message); 
+      } finally { 
+        setLoading(false); 
+      }
     };
     fetchData();
   }, [slug]);
 
   useEffect(() => {
-    if (selectedService && selectedDate && selectedBarber) {
+    if (selectedServices.length > 0 && selectedDate && selectedBarber) {
       const fetchSlots = async () => {
         setIsLoadingSlots(true);
         setAvailableSlots([]);
         setError('');
         try {
-          const slots = await getAvailableSlots(slug, selectedDate, selectedService.duration, selectedBarber.id);
+          const slots = await getAvailableSlots(slug, selectedDate, totalDuration, selectedBarber.id);
           setAvailableSlots(slots);
-        } catch (err) { setError(err.message); } finally { setIsLoadingSlots(false); }
+        } catch (err) { 
+          setError(err.message); 
+        } finally { 
+          setIsLoadingSlots(false); 
+        }
       };
       fetchSlots();
     } else {
       setAvailableSlots([]);
     }
-  }, [selectedService, selectedDate, selectedBarber, slug]);
+  }, [selectedServices, totalDuration, selectedDate, selectedBarber, slug]);
 
   const handleBookingSubmit = async (e) => {
     e.preventDefault();
@@ -85,10 +117,10 @@ const BookingPage = () => {
     try {
       const appointmentData = {
         barbershopId: barbershopData.shop.id,
-        serviceId: selectedService.id,
-        serviceName: selectedService.name,
-        serviceDuration: selectedService.duration,
-        servicePrice: selectedService.price,
+        services: selectedServices.map(s => ({ id: s.id, name: s.name, price: s.price, duration: s.duration, imageUrl: s.imageUrl })),
+        serviceName: selectedServices.map(s => s.name).join(', '),
+        serviceDuration: totalDuration,
+        servicePrice: totalPrice,
         barberId: selectedBarber.id,
         date: selectedDate,
         slot: selectedSlot,
@@ -97,7 +129,11 @@ const BookingPage = () => {
       };
       await createAppointment(appointmentData);
       setBookingSuccess(`Parabéns, ${clientName}! O seu horário com ${selectedBarber.name} foi confirmado.`);
-    } catch (err) { setError(err.message); } finally { setIsBooking(false); }
+    } catch (err) { 
+      setError(err.message); 
+    } finally { 
+      setIsBooking(false); 
+    }
   };
 
   if (loading) return <div className={styles.pageContainer}><p>A carregar...</p></div>;
@@ -126,8 +162,6 @@ const BookingPage = () => {
         <p><strong>Endereço:</strong> {shop.location?.address}</p>
         <p><strong>CEP:</strong> {shop.location?.cep}</p>
         <p><strong>Ponto de Referência:</strong> {shop.location?.referencePoint}</p>
-        
-        {/* SECÇÃO DO MAPA ATUALIZADA PARA USAR UM LINK */}
         {mapQuery && (
           <a href={mapUrl} target="_blank" rel="noopener noreferrer" className={styles.mapButton}>
             Ver no Mapa
@@ -136,74 +170,100 @@ const BookingPage = () => {
       </div>
 
       <div className={styles.bookingContainer}>
-        <div className={styles.step}>
-          <h2 className={styles.stepTitle}>Passo 1: Escolha o seu serviço</h2>
+        {/* Passo 1 */}
+        <div className={styles.step} style={{ display: 'block' }}>
+          <h2 className={styles.stepTitle}>Passo 1: Escolha os seus serviços</h2>
           <div className={styles.selectionGrid}>
-            {services.map(service => (
-              <button key={service.id} onClick={() => handleServiceSelect(service)} className={`${styles.selectionButton} ${selectedService?.id === service.id ? styles.selected : ''}`}>
-                <strong>{service.name}</strong>
-                <span>R$ {Number(service.price).toFixed(2)} ({service.duration} min)</span>
+            {services.map(service => {
+              const isSelected = selectedServices.some(s => s.id === service.id);
+              return (
+                <div 
+                  key={`service-${service.id}`} 
+                  onClick={() => handleServiceSelect(service)} 
+                  className={`${styles.selectionButton} ${isSelected ? styles.selected : ''}`}
+                >
+                  <div className={styles.serviceImageContainer}>
+                    {service.imageUrl ? (
+                      <img src={service.imageUrl} alt={service.name} className={styles.serviceImage} />
+                    ) : (
+                      <span>✂️</span>
+                    )}
+                  </div>
+                  <div className={styles.serviceInfo}>
+                    <strong>{service.name}</strong>
+                    <span>R$ {Number(service.price).toFixed(2)} ({service.duration} min)</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Passo 2 */}
+        <div style={{ display: selectedServices.length > 0 ? 'block' : 'none' }}>
+          <h2 className={styles.stepTitle}>Passo 2: Escolha o seu profissional</h2>
+          <div className={styles.selectionGrid}>
+            {barbers.map(barber => (
+              <button 
+                key={`barber-${barber.id}`} 
+                onClick={() => handleBarberSelect(barber)} 
+                className={`${styles.selectionButton} ${selectedBarber?.id === barber.id ? styles.selected : ''}`}
+              >
+                {barber.name}
               </button>
             ))}
           </div>
         </div>
 
-        {selectedService && (
-          <div className={styles.step}>
-            <h2 className={styles.stepTitle}>Passo 2: Escolha o seu profissional</h2>
-            <div className={styles.selectionGrid}>
-              {barbers.map(barber => (
-                <button key={barber.id} onClick={() => handleBarberSelect(barber)} className={`${styles.selectionButton} ${selectedBarber?.id === barber.id ? styles.selected : ''}`}>
-                  {barber.name}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Passo 3 */}
+        <div style={{ display: selectedBarber ? 'block' : 'none' }}>
+          <h2 className={styles.stepTitle}>Passo 3: Escolha a data</h2>
+          <input type="date" onChange={handleDateChange} value={selectedDate} min={getTodayString()} className={styles.dateInput} />
+        </div>
 
-        {selectedBarber && (
-          <div className={styles.step}>
-            <h2 className={styles.stepTitle}>Passo 3: Escolha a data</h2>
-            <input type="date" onChange={handleDateChange} value={selectedDate} min={getTodayString()} className={styles.dateInput} />
-          </div>
-        )}
-        
-        {selectedDate && selectedBarber && selectedService && (
-          <div className={styles.step}>
-            <h2 className={styles.stepTitle}>Passo 4: Escolha o horário</h2>
-            {isLoadingSlots ? <p>A procurar horários disponíveis...</p> : 
-              availableSlots.length > 0 ? (
-                <div className={styles.selectionGrid}>
-                  {availableSlots.map(slot => (
-                    <button key={slot} onClick={() => handleSlotSelect(slot)} className={`${styles.selectionButton} ${selectedSlot === slot ? styles.selected : ''}`}>
-                      {slot}
-                    </button>
-                  ))}
-                </div>
-              ) : <p>Nenhum horário disponível para este profissional neste dia. Por favor, escolha outra data ou profissional.</p>
-            }
-          </div>
-        )}
-        
-        {selectedSlot && (
-          <div className={`${styles.step} ${styles.confirmationSection}`}>
-            <h2 className={styles.stepTitle}>Passo 5: Os seus Dados</h2>
-            <p className={styles.confirmationSummary}>
-              A agendar <strong>{selectedService.name}</strong> com <strong>{selectedBarber.name}</strong> para <strong>{new Date(selectedDate).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</strong> às <strong>{selectedSlot}</strong>.
-            </p>
-            <form onSubmit={handleBookingSubmit} className={styles.form}>
-              <div className={styles.formGroup}>
-                <label className={styles.label}>O seu Nome:</label>
-                <input type="text" value={clientName} onChange={(e) => setClientName(e.target.value)} required readOnly={!!currentUser} className={styles.input} />
+        {/* Passo 4 */}
+        <div style={{ display: selectedDate && selectedBarber && selectedServices.length > 0 ? 'block' : 'none' }}>
+          <h2 className={styles.stepTitle}>Passo 4: Escolha o horário</h2>
+          {isLoadingSlots ? <p>A procurar horários disponíveis...</p> : 
+            availableSlots.length > 0 ? (
+              <div className={styles.selectionGrid}>
+                {availableSlots.map((slot, index) => (
+                  <button 
+                    key={`slot-${slot}-${selectedBarber?.id || 'no-barber'}-${index}`} 
+                    onClick={() => handleSlotSelect(slot)} 
+                    className={`${styles.selectionButton} ${selectedSlot === slot ? styles.selected : ''}`}
+                  >
+                    {slot}
+                  </button>
+                ))}
               </div>
-              <div className={styles.formGroup}>
-                <label className={styles.label}>O seu E-mail:</label>
-                <input type="email" value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} required readOnly={!!currentUser} className={styles.input} />
-              </div>
-              <button type="submit" disabled={isBooking} className={styles.button}>{isBooking ? 'A confirmar...' : 'Confirmar Agendamento'}</button>
-            </form>
-          </div>
-        )}
+            ) : <p>Nenhum horário disponível para este profissional neste dia.</p>
+          }
+        </div>
+
+        {/* Passo 5 */}
+        <div style={{ display: selectedSlot ? 'block' : 'none' }}>
+          <h2 className={styles.stepTitle}>Passo 5: Os seus Dados</h2>
+          <p className={styles.confirmationSummary}>
+            A agendar <strong>{selectedServices.map(s => s.name).join(' + ')}</strong> 
+            com <strong>{selectedBarber?.name}</strong> para <strong>{new Date(selectedDate).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</strong> às <strong>{selectedSlot}</strong>.
+            <br/>
+            <strong>Total: R$ {totalPrice.toFixed(2)} ({totalDuration} min)</strong>
+          </p>
+          <form onSubmit={handleBookingSubmit} className={styles.form}>
+            <div className={styles.formGroup}>
+              <label className={styles.label}>O seu Nome:</label>
+              <input type="text" value={clientName} onChange={(e) => setClientName(e.target.value)} required readOnly={!!currentUser} className={styles.input} />
+            </div>
+            <div className={styles.formGroup}>
+              <label className={styles.label}>O seu E-mail:</label>
+              <input type="email" value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} required readOnly={!!currentUser} className={styles.input} />
+            </div>
+            <button type="submit" disabled={isBooking} className={styles.button}>
+              {isBooking ? 'A confirmar...' : 'Confirmar Agendamento'}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );
