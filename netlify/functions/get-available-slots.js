@@ -14,7 +14,7 @@ if (getApps().length === 0) {
 const db = getFirestore();
 
 const TIME_ZONE = 'America/Sao_Paulo';
-const slotInterval = 30; // Intervalo de 30 minutos entre os horários
+const slotInterval = 30; // Intervalo de 30 minutos
 
 exports.handler = async function(event, context) {
   if (event.httpMethod !== 'GET') {
@@ -24,7 +24,7 @@ exports.handler = async function(event, context) {
   try {
     const { slug, date, duration, barberId } = event.queryStringParameters;
     if (!slug || !date || !duration || !barberId) {
-      return { statusCode: 400, body: JSON.stringify({ message: "Dados insuficientes. A seleção do profissional é obrigatória." }) };
+      return { statusCode: 400, body: JSON.stringify({ message: "Dados insuficientes para buscar horários." }) };
     }
     const serviceDuration = parseInt(duration);
     
@@ -37,52 +37,47 @@ exports.handler = async function(event, context) {
     const barbershopId = shopDoc.id;
     const shopData = shopDoc.data();
 
-    // --- LÓGICA DE SEGURANÇA REFORÇADA ---
-    // Verificamos cada campo de horário individualmente e usamos um valor padrão se ele não existir.
     const dailyBusinessHours = {
       start: shopData.businessHours?.start || '09:00',
-      end: shopData.businessHours?.end || '18:00',
+      end: shopData.businessHours?.end || '22:00', // Exemplo de horário de fechamento
     };
     const lunchBreak = {
       start: shopData.lunchBreak?.start || '12:00',
       end: shopData.lunchBreak?.end || '13:00',
     };
-    // --- FIM DA LÓGICA DE SEGURANÇA ---
 
-    const selectedDayStart = fromZonedTime(`${date}T00:00:00`, TIME_ZONE);
-    const selectedDayEnd = fromZonedTime(`${date}T23:59:59`, TIME_ZONE);
+    const selectedDayStart = new Date(`${date}T00:00:00.000Z`);
+    const selectedDayEnd = new Date(`${date}T23:59:59.999Z`);
 
-    const appointmentsQuery = db.collection('barbershops').doc(barbershopId).collection('appointments')
-      .where('date', '>=', selectedDayStart)
-      .where('date', '<=', selectedDayEnd)
-      .where('barberId', '==', barberId);
+    // CORRIGIDO: Buscando na coleção principal 'schedules'
+    const appointmentsQuery = db.collection('schedules')
+      .where('barbershopId', '==', barbershopId)
+      .where('barberId', '==', barberId)
+      .where('startTime', '>=', selectedDayStart)
+      .where('startTime', '<=', selectedDayEnd);
     
     const appointmentsSnapshot = await appointmentsQuery.get();
       
     const bookedSlots = [];
     appointmentsSnapshot.forEach(doc => {
       const bookingData = doc.data();
-      const zonedDate = toZonedTime(bookingData.date.toDate(), TIME_ZONE);
+      const zonedDate = toZonedTime(bookingData.startTime.toDate(), TIME_ZONE);
       bookedSlots.push({ start: zonedDate, duration: bookingData.serviceDuration || 30 });
     });
 
     const availableSlots = [];
     
     const [startHour, startMinute] = dailyBusinessHours.start.split(':');
-    let currentTime = fromZonedTime(new Date(date), TIME_ZONE);
-    currentTime.setHours(startHour, startMinute, 0, 0);
+    let currentTime = fromZonedTime(`${date}T${startHour}:${startMinute}:00`, TIME_ZONE);
 
     const [endHour, endMinute] = dailyBusinessHours.end.split(':');
-    let dayEnd = fromZonedTime(new Date(date), TIME_ZONE);
-    dayEnd.setHours(endHour, endMinute, 0, 0);
+    let dayEnd = fromZonedTime(`${date}T${endHour}:${endMinute}:00`, TIME_ZONE);
 
     const [lunchStartHour, lunchStartMinute] = lunchBreak.start.split(':');
-    let lunchStart = fromZonedTime(new Date(date), TIME_ZONE);
-    lunchStart.setHours(lunchStartHour, lunchStartMinute, 0, 0);
+    let lunchStart = fromZonedTime(`${date}T${lunchStartHour}:${lunchStartMinute}:00`, TIME_ZONE);
 
     const [lunchEndHour, lunchEndMinute] = lunchBreak.end.split(':');
-    let lunchEnd = fromZonedTime(new Date(date), TIME_ZONE);
-    lunchEnd.setHours(lunchEndHour, lunchEndMinute, 0, 0);
+    let lunchEnd = fromZonedTime(`${date}T${lunchEndHour}:${lunchEndMinute}:00`, TIME_ZONE);
 
     const now = toZonedTime(new Date(), TIME_ZONE);
     const isToday = format(now, 'yyyy-MM-dd') === date;
@@ -115,10 +110,10 @@ exports.handler = async function(event, context) {
     };
 
   } catch (error) {
-    console.error("### ERRO FATAL DENTRO DA FUNÇÃO ###:", error);
+    console.error("Erro em get-available-slots:", error);
     return { 
       statusCode: 500, 
-      body: JSON.stringify({ message: error.message }) 
+      body: JSON.stringify({ message: `Falha ao buscar horários: ${error.message}` }) 
     };
   }
 };

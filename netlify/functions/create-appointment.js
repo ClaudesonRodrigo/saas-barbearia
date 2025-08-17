@@ -3,7 +3,6 @@
 const { initializeApp, getApps, cert } = require('firebase-admin/app');
 const { getFirestore, Timestamp } = require('firebase-admin/firestore');
 const { getAuth } = require('firebase-admin/auth');
-const { fromZonedTime } = require('date-fns-tz');
 
 // Inicialização do Firebase Admin
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
@@ -14,8 +13,6 @@ if (getApps().length === 0) {
 }
 const db = getFirestore();
 const authAdmin = getAuth();
-
-const TIME_ZONE = 'America/Sao_Paulo';
 
 // --- Placeholder para a nossa função de envio de e-mail ---
 const sendEmail = async ({ to, subject, body }) => {
@@ -36,40 +33,44 @@ exports.handler = async function(event, context) {
   try {
     const {
       barbershopId,
-      services, // O array de serviços
-      serviceName, // O nome combinado
-      serviceDuration, // A duração total
-      servicePrice, // O preço total
+      clientId,
+      services,
+      serviceName,
+      serviceDuration,
+      servicePrice,
       barberId,
-      date,
-      slot,
+      startTime,
       clientName,
       clientEmail
     } = JSON.parse(event.body);
 
-    // A verificação agora procura pelo array 'services'
-    if (!barbershopId || !services || services.length === 0 || !date || !slot || !clientName || !clientEmail || !barberId) {
+    if (!barbershopId || !clientId || !services || services.length === 0 || !startTime || !clientName || !clientEmail || !barberId) {
       return { statusCode: 400, body: JSON.stringify({ message: "Dados do agendamento incompletos." }) };
     }
 
-    const [hour, minute] = slot.split(':');
-    const appointmentDateTimeString = `${date}T${hour}:${minute}:00`;
-    const appointmentDate = fromZonedTime(appointmentDateTimeString, TIME_ZONE);
-    const appointmentEnd = new Date(appointmentDate.getTime() + serviceDuration * 60000);
+    const appointmentStart = new Date(startTime);
+    const appointmentEnd = new Date(appointmentStart.getTime() + serviceDuration * 60000);
 
-    // --- VERIFICAÇÃO DE SEGURANÇA NO BACK-END ---
-    const appointmentsRef = db.collection('barbershops').doc(barbershopId).collection('appointments');
+    // --- VERIFICAÇÃO DE CONFLITO (Lógica de data corrigida) ---
+    const startOfDay = new Date(appointmentStart);
+    startOfDay.setUTCHours(0, 0, 0, 0); // Usando UTC para consistência
+
+    const endOfDay = new Date(appointmentStart);
+    endOfDay.setUTCHours(23, 59, 59, 999); // Usando UTC para consistência
+
+    const appointmentsRef = db.collection('schedules');
     const querySnapshot = await appointmentsRef
+        .where('barbershopId', '==', barbershopId)
         .where('barberId', '==', barberId)
-        .where('date', '>=', fromZonedTime(`${date}T00:00:00`, TIME_ZONE))
-        .where('date', '<=', fromZonedTime(`${date}T23:59:59`, TIME_ZONE))
+        .where('startTime', '>=', startOfDay)
+        .where('startTime', '<=', endOfDay)
         .get();
 
     const isAlreadyBooked = querySnapshot.docs.some(doc => {
         const existingApp = doc.data();
-        const existingStart = existingApp.date.toDate();
+        const existingStart = existingApp.startTime.toDate();
         const existingEnd = new Date(existingStart.getTime() + (existingApp.serviceDuration * 60000));
-        return appointmentDate.getTime() < existingEnd.getTime() && appointmentEnd.getTime() > existingStart.getTime();
+        return appointmentStart.getTime() < existingEnd.getTime() && appointmentEnd.getTime() > existingStart.getTime();
     });
 
     if (isAlreadyBooked) {
@@ -77,38 +78,42 @@ exports.handler = async function(event, context) {
     }
     // --- FIM DA VERIFICAÇÃO ---
     
-    const newAppointmentRef = db.collection('barbershops').doc(barbershopId).collection('appointments').doc();
+    const newAppointmentRef = db.collection('schedules').doc();
     
     await newAppointmentRef.set({
-      services: services, // Guardamos o array de serviços
+      barbershopId,
+      clientId,
+      services,
       serviceName,
       serviceDuration: Number(serviceDuration),
       servicePrice: Number(servicePrice),
       barberId,
       clientName,
       clientEmail,
-      date: Timestamp.fromDate(appointmentDate),
+      startTime: Timestamp.fromDate(appointmentStart),
       status: 'confirmed',
       createdAt: Timestamp.now(),
     });
 
-    // --- LÓGICA DE NOTIFICAÇÕES POR E-MAIL ---
+    // --- LÓGICA DE NOTIFICAÇÕES (sem alterações) ---
     const shopDoc = await db.collection('barbershops').doc(barbershopId).get();
     const shopData = shopDoc.data();
     const ownerUser = await authAdmin.getUser(shopData.ownerId);
     const ownerEmail = ownerUser.email;
 
+    const formattedDateTime = appointmentStart.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+
     await sendEmail({
       to: clientEmail,
       subject: `Agendamento Confirmado na ${shopData.name}!`,
-      body: `Olá ${clientName}, o seu agendamento para "${serviceName}" no dia ${date} às ${slot} foi confirmado com sucesso.`
+      body: `Olá ${clientName}, o seu agendamento para "${serviceName}" no dia ${formattedDateTime} foi confirmado com sucesso.`
     });
 
     if (ownerEmail) {
       await sendEmail({
         to: ownerEmail,
-        subject: `Novo Agendamento: ${clientName} às ${slot}`,
-        body: `Um novo agendamento foi marcado por ${clientName} (${clientEmail}) para "${serviceName}" no dia ${date} às ${slot}.`
+        subject: `Novo Agendamento: ${clientName}`,
+        body: `Um novo agendamento foi marcado por ${clientName} (${clientEmail}) para "${serviceName}" no dia ${formattedDateTime}.`
       });
     }
     // --- FIM DA LÓGICA DE NOTIFICAÇÕES ---

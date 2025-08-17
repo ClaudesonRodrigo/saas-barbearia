@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
 import { createService, getServices, deleteService, updateService, getDailyAppointments, cancelAppointment } from '../services/shopService';
 import { createBarber, getBarbers, deleteBarber, updateBarber } from '../services/barberService';
-import { getUploadSignature, uploadToCloudinary } from '../services/cloudinaryService'; // Importamos os serviços do Cloudinary
+import { getUploadSignature, uploadToCloudinary } from '../services/cloudinaryService';
 import DashboardMetrics from '../components/DashboardMetrics';
 import styles from './ShopOwnerDashboard.module.scss';
 
@@ -17,8 +17,8 @@ const ShopOwnerDashboard = () => {
   const [editingService, setEditingService] = useState(null);
   const [services, setServices] = useState([]);
   const [isLoadingServices, setIsLoadingServices] = useState(true);
-  const [serviceImageFile, setServiceImageFile] = useState(null); // Novo estado para o ficheiro da imagem
-  const [serviceImageUrl, setServiceImageUrl] = useState(''); // Novo estado para a URL da imagem
+  const [serviceImageFile, setServiceImageFile] = useState(null);
+  const [serviceImageUrl, setServiceImageUrl] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
@@ -51,7 +51,7 @@ const ShopOwnerDashboard = () => {
     setServiceName(service.name);
     setPrice(service.price);
     setDuration(service.duration);
-    setServiceImageUrl(service.imageUrl || ''); // Preenche a URL da imagem atual
+    setServiceImageUrl(service.imageUrl || '');
   };
 
   const cancelEdit = () => {
@@ -66,7 +66,6 @@ const ShopOwnerDashboard = () => {
   const handleServiceImageChange = (e) => {
     if (e.target.files[0]) {
       setServiceImageFile(e.target.files[0]);
-      // Cria uma URL local para a pré-visualização
       setServiceImageUrl(URL.createObjectURL(e.target.files[0]));
     }
   };
@@ -79,7 +78,6 @@ const ShopOwnerDashboard = () => {
     try {
       let finalImageUrl = editingService ? editingService.imageUrl : '';
 
-      // 1. Se uma nova imagem foi selecionada, faz o upload primeiro
       if (serviceImageFile) {
         setIsUploading(true);
         const token = await currentUser.getIdToken();
@@ -149,7 +147,10 @@ const ShopOwnerDashboard = () => {
         </div>
         <div>
           {isLoadingAppointments ? <p>A carregar agenda...</p> : 
-            appointments.length === 0 ? <p>Nenhum agendamento para este dia.</p> : (
+            // CORREÇÃO APLICADA AQUI
+            appointments.length === 0 ? (
+              <div><p>Nenhum agendamento para este dia.</p></div>
+            ) : (
               <ul className={styles.list}>
                 {appointments.map(app => (
                   <li key={app.id} className={styles.listItem}>
@@ -241,7 +242,7 @@ const ShopOwnerDashboard = () => {
               </li>
             ))}
           </ul>
-        )}''
+        )}
       </section>
     </div>
   );

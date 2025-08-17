@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { getClientAppointments, cancelClientAppointment } from '../services/publicService';
-import styles from './ClientDashboard.module.scss'; // Importamos os nossos novos estilos
+// CORRIGIDO: Importando do novo clientService.js
+import { getClientAppointments, cancelClientAppointment } from '../services/clientService'; 
+import styles from './ClientDashboard.module.scss';
 
 const ClientDashboard = () => {
   const [appointments, setAppointments] = useState([]);
@@ -33,6 +34,8 @@ const ClientDashboard = () => {
     fetchAppointments();
   }, [fetchAppointments]);
 
+  // NOTA: A função de cancelar ainda não existe no backend,
+  // precisaremos criá-la depois.
   const handleCancel = async (barbershopId, appointmentId) => {
     if (!window.confirm("Tem a certeza que deseja cancelar este agendamento?")) {
       return;
@@ -41,9 +44,11 @@ const ClientDashboard = () => {
       setMessage('');
       setError('');
       const token = await currentUser.getIdToken();
-      await cancelClientAppointment(barbershopId, appointmentId, token);
-      setMessage("Agendamento cancelado com sucesso!");
-      fetchAppointments();
+      // Esta função 'cancelClientAppointment' precisará ser criada no backend
+      // e no clientService.js
+      // await cancelClientAppointment(barbershopId, appointmentId, token);
+      setMessage("Função de cancelamento ainda não implementada.");
+      // fetchAppointments(); // Descomentar quando a função estiver pronta
     } catch (err) {
       setError(err.message);
     }
@@ -68,6 +73,8 @@ const ClientDashboard = () => {
                   <div className={styles.appointmentInfo}>
                     <strong>{app.formattedDate} às {app.time}</strong>
                     <span>Serviço: {app.serviceName}</span>
+                    {/* Adicionado para mostrar o nome da barbearia */}
+                    <span className={styles.shopName}>Barbearia: {app.barbershopName}</span> 
                   </div>
                   <button 
                     onClick={() => handleCancel(app.barbershopId, app.id)} 

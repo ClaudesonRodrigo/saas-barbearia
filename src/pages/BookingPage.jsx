@@ -5,6 +5,7 @@ import { useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getPublicBarbershopData, getAvailableSlots, createAppointment } from '../services/publicService';
 import styles from './BookingPage.module.scss';
+import WhatsAppConsentForm from '../components/WhatsAppConsentForm/WhatsAppConsentForm';
 
 const BookingPage = () => {
   const { slug } = useParams(); 
@@ -29,11 +30,12 @@ const BookingPage = () => {
   const [isBooking, setIsBooking] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState('');
 
+  // CORRIGIDO: Garantindo que os valores sejam tratados como números
   const { totalPrice, totalDuration } = useMemo(() => {
     return selectedServices.reduce(
       (acc, service) => {
-        acc.totalPrice += service.price;
-        acc.totalDuration += service.duration;
+        acc.totalPrice += Number(service.price) || 0;
+        acc.totalDuration += Number(service.duration) || 0;
         return acc;
       },
       { totalPrice: 0, totalDuration: 0 }
@@ -115,18 +117,21 @@ const BookingPage = () => {
     setError('');
     setBookingSuccess('');
     try {
+      const startTimeISO = new Date(`${selectedDate}T${selectedSlot}`).toISOString();
+
       const appointmentData = {
         barbershopId: barbershopData.shop.id,
+        clientId: currentUser.uid,
         services: selectedServices.map(s => ({ id: s.id, name: s.name, price: s.price, duration: s.duration, imageUrl: s.imageUrl })),
         serviceName: selectedServices.map(s => s.name).join(', '),
         serviceDuration: totalDuration,
         servicePrice: totalPrice,
         barberId: selectedBarber.id,
-        date: selectedDate,
-        slot: selectedSlot,
+        startTime: startTimeISO,
         clientName,
         clientEmail,
       };
+
       await createAppointment(appointmentData);
       setBookingSuccess(`Parabéns, ${clientName}! O seu horário com ${selectedBarber.name} foi confirmado.`);
     } catch (err) { 
@@ -144,9 +149,12 @@ const BookingPage = () => {
 
   if (bookingSuccess) {
     return (
-      <div className={`${styles.pageContainer} ${styles.successMessage}`}>
-        <h1>Agendamento Confirmado!</h1>
-        <p>{bookingSuccess}</p>
+      <div className={styles.pageContainer}>
+        <div className={styles.successMessageContainer}>
+          <h1>Agendamento Confirmado!</h1>
+          <p>{bookingSuccess}</p>
+        </div>
+        <WhatsAppConsentForm />
       </div>
     );
   }
@@ -170,7 +178,6 @@ const BookingPage = () => {
       </div>
 
       <div className={styles.bookingContainer}>
-        {/* Passo 1 */}
         <div className={styles.step} style={{ display: 'block' }}>
           <h2 className={styles.stepTitle}>Passo 1: Escolha os seus serviços</h2>
           <div className={styles.selectionGrid}>
@@ -199,7 +206,6 @@ const BookingPage = () => {
           </div>
         </div>
 
-        {/* Passo 2 */}
         <div style={{ display: selectedServices.length > 0 ? 'block' : 'none' }}>
           <h2 className={styles.stepTitle}>Passo 2: Escolha o seu profissional</h2>
           <div className={styles.selectionGrid}>
@@ -215,13 +221,11 @@ const BookingPage = () => {
           </div>
         </div>
 
-        {/* Passo 3 */}
         <div style={{ display: selectedBarber ? 'block' : 'none' }}>
           <h2 className={styles.stepTitle}>Passo 3: Escolha a data</h2>
           <input type="date" onChange={handleDateChange} value={selectedDate} min={getTodayString()} className={styles.dateInput} />
         </div>
 
-        {/* Passo 4 */}
         <div style={{ display: selectedDate && selectedBarber && selectedServices.length > 0 ? 'block' : 'none' }}>
           <h2 className={styles.stepTitle}>Passo 4: Escolha o horário</h2>
           {isLoadingSlots ? <p>A procurar horários disponíveis...</p> : 
@@ -241,7 +245,6 @@ const BookingPage = () => {
           }
         </div>
 
-        {/* Passo 5 */}
         <div style={{ display: selectedSlot ? 'block' : 'none' }}>
           <h2 className={styles.stepTitle}>Passo 5: Os seus Dados</h2>
           <p className={styles.confirmationSummary}>

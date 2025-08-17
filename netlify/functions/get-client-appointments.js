@@ -23,48 +23,46 @@ exports.handler = async function(event, context) {
   }
 
   try {
-    // --- LÓGICA DE SEGURANÇA ---
     const token = event.headers.authorization.split("Bearer ")[1];
     const decodedToken = await authAdmin.verifyIdToken(token);
-    const { email } = decodedToken;
+    const { uid } = decodedToken;
 
-    // Apenas um 'client' (ou qualquer utilizador autenticado) pode ver os seus próprios agendamentos
-    if (!email) {
+    if (!uid) {
       return { statusCode: 403, body: JSON.stringify({ message: "Acesso negado." }) };
     }
-    // --- FIM DA LÓGICA DE SEGURANÇA ---
 
-    // 1. Usamos uma 'collectionGroup' query para procurar em todas as subcoleções 'appointments'
-    const appointmentsRef = db.collectionGroup('appointments');
-    
-    // 2. Filtramos os agendamentos pelo e-mail do cliente que está autenticado
+    // CORRIGIDO: Buscando na coleção 'schedules' pelo 'clientId'
+    const appointmentsRef = db.collection('schedules');
     const appointmentsSnapshot = await appointmentsRef
-      .where('clientEmail', '==', email)
-      .orderBy('date', 'desc') // Ordena os agendamentos do mais recente para o mais antigo
+      .where('clientId', '==', uid)
+      .orderBy('startTime', 'desc')
       .get();
       
     if (appointmentsSnapshot.empty) {
       return {
         statusCode: 200,
-        body: JSON.stringify([]), // Retorna uma lista vazia se não houver agendamentos
+        body: JSON.stringify([]),
       };
     }
 
     const appointments = [];
-    appointmentsSnapshot.forEach(doc => {
+    for (const doc of appointmentsSnapshot.docs) {
       const data = doc.data();
-      const zonedDate = toZonedTime(data.date.toDate(), TIME_ZONE);
+      const shopDoc = await db.collection('barbershops').doc(data.barbershopId).get();
+      const shopName = shopDoc.exists ? shopDoc.data().name : 'Barbearia Desconhecida';
+      
+      const zonedDate = toZonedTime(data.startTime.toDate(), TIME_ZONE);
       
       appointments.push({
         id: doc.id,
-        barbershopId: doc.ref.parent.parent.id, // Adicionamos o ID da barbearia
+        barbershopId: data.barbershopId,
+        barbershopName: shopName,
         clientName: data.clientName,
         serviceName: data.serviceName,
-        // Adicionamos campos formatados para facilitar a vida do front-end
         formattedDate: `${String(zonedDate.getDate()).padStart(2, '0')}/${String(zonedDate.getMonth() + 1).padStart(2, '0')}/${zonedDate.getFullYear()}`,
         time: `${String(zonedDate.getHours()).padStart(2, '0')}:${String(zonedDate.getMinutes()).padStart(2, '0')}`
       });
-    });
+    }
 
     return {
       statusCode: 200,
@@ -73,8 +71,7 @@ exports.handler = async function(event, context) {
 
   } catch (error) {
     console.error("Erro ao buscar agendamentos do cliente:", error);
-    // Se o erro for sobre um índice em falta, o Firestore irá informar-nos
-    if (error.code === 9) { // FAILED_PRECONDITION
+    if (error.code === 9) {
         return { statusCode: 500, body: JSON.stringify({ message: "O banco de dados precisa de um índice para esta consulta. Verifique os logs do back-end." }) };
     }
     return { 
