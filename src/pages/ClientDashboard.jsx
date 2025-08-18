@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-// CORRIGIDO: Importando do novo clientService.js
-import { getClientAppointments, cancelClientAppointment } from '../services/clientService'; 
+// INSTRUÇÃO 1: A importação de 'cancelClientAppointment' foi removida da linha abaixo,
+// pois não está sendo utilizada no momento.
+import { getClientAppointments } from '../services/clientService'; 
 import styles from './ClientDashboard.module.scss';
 
 const ClientDashboard = () => {
@@ -19,6 +20,7 @@ const ClientDashboard = () => {
     setIsLoading(true);
     setError('');
     try {
+      // Esta variável 'token' é mantida, pois é usada na linha seguinte.
       const token = await currentUser.getIdToken();
       const data = await getClientAppointments(token);
       setAppointments(data);
@@ -43,7 +45,10 @@ const ClientDashboard = () => {
     try {
       setMessage('');
       setError('');
-      const token = await currentUser.getIdToken();
+      // INSTRUÇÃO 2: A variável 'token' abaixo foi comentada, pois não estava
+      // sendo utilizada dentro desta função.
+      // const token = await currentUser.getIdToken();
+      
       // Esta função 'cancelClientAppointment' precisará ser criada no backend
       // e no clientService.js
       // await cancelClientAppointment(barbershopId, appointmentId, token);
