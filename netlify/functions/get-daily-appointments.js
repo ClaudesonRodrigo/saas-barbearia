@@ -2,7 +2,7 @@
 
 const { initializeApp, getApps, cert } = require('firebase-admin/app');
 const { getFirestore } = require('firebase-admin/firestore');
-const { getAuth } = require('firebase-admin/auth'); // 👈 1. Importação adicionada
+const { getAuth } = require('firebase-admin/auth');
 const { fromZonedTime, toZonedTime } = require('date-fns-tz');
 
 // Inicialização do Firebase Admin
@@ -13,7 +13,7 @@ if (getApps().length === 0) {
   });
 }
 const db = getFirestore();
-const authAdmin = getAuth(); // 👈 2. Variável criada
+const authAdmin = getAuth();
 
 const TIME_ZONE = 'America/Sao_Paulo';
 
@@ -26,6 +26,7 @@ exports.handler = async function(event, context) {
     // --- LÓGICA DE SEGURANÇA ---
     const token = event.headers.authorization.split("Bearer ")[1];
     const decodedToken = await authAdmin.verifyIdToken(token);
+    // Usando o 'shopOwner' que descobrimos ser o correto
     const { role, barbershopId } = decodedToken;
 
     if (role !== 'shopOwner' || !barbershopId) {
@@ -33,42 +34,46 @@ exports.handler = async function(event, context) {
     }
     // --- FIM DA LÓGICA DE SEGURANÇA ---
 
-    // Pegamos a data da URL (query parameter), ex: ?date=2025-07-22
     const { date } = event.queryStringParameters;
 
     if (!date) {
       return { statusCode: 400, body: JSON.stringify({ message: "A data não foi fornecida." }) };
     }
 
-    // Definimos o início e o fim do dia para a busca no Firestore
     const selectedDayStart = fromZonedTime(`${date}T00:00:00`, TIME_ZONE);
     const selectedDayEnd = fromZonedTime(`${date}T23:59:59`, TIME_ZONE);
+    
+    // --- INÍCIO DAS CORREÇÕES ---
 
-    // Buscamos os agendamentos na subcoleção correta, filtrando pelo intervalo de data
-    const appointmentsRef = db.collection('barbershops').doc(barbershopId).collection('appointments');
+    // CORREÇÃO 1: Apontar para a coleção principal 'schedules'.
+    const appointmentsRef = db.collection('schedules');
     const appointmentsSnapshot = await appointmentsRef
-      .where('date', '>=', selectedDayStart)
-      .where('date', '<=', selectedDayEnd)
-      .orderBy('date', 'asc') // Ordena os agendamentos do mais cedo para o mais tarde
+      // CORREÇÃO 2: Adicionar o filtro pelo ID da barbearia do dono.
+      .where('barbershopId', '==', barbershopId)
+      // CORREÇÃO 3: Usar o campo de data correto 'startTime'.
+      .where('startTime', '>=', selectedDayStart)
+      .where('startTime', '<=', selectedDayEnd)
+      .orderBy('startTime', 'asc')
       .get();
       
+    // --- FIM DAS CORREÇÕES ---
+
     if (appointmentsSnapshot.empty) {
       return {
         statusCode: 200,
-        body: JSON.stringify([]), // Retorna uma lista vazia se não houver agendamentos
+        body: JSON.stringify([]),
       };
     }
 
     const appointments = [];
     appointmentsSnapshot.forEach(doc => {
       const data = doc.data();
-      // Convertemos a data UTC do banco para o fuso horário de São Paulo para exibição
-      const zonedDate = toZonedTime(data.date.toDate(), TIME_ZONE);
+      // CORREÇÃO 4: Usar 'startTime' para converter o fuso horário.
+      const zonedDate = toZonedTime(data.startTime.toDate(), TIME_ZONE);
       
       appointments.push({
         id: doc.id,
         ...data,
-        // Adicionamos um campo formatado para facilitar a vida do front-end
         time: `${String(zonedDate.getHours()).padStart(2, '0')}:${String(zonedDate.getMinutes()).padStart(2, '0')}`
       });
     });
@@ -79,7 +84,11 @@ exports.handler = async function(event, context) {
     };
 
   } catch (error) {
-    console.error("Erro ao buscar agendamentos:", error);
+    console.error("Erro ao buscar agendamentos diários:", error);
+    // Checagem de erro de índice do Firestore
+    if (error.code === 'FAILED_PRECONDITION') {
+        return { statusCode: 500, body: JSON.stringify({ message: "O banco de dados precisa de um índice para esta consulta. Verifique os logs da função no Netlify para obter o link de criação do índice." }) };
+    }
     return { 
       statusCode: 500, 
       body: JSON.stringify({ message: 'Falha ao buscar agendamentos.' }) 

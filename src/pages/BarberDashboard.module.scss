@@ -1,5 +1,6 @@
-/* src/pages/ClientDashboard.module.scss */
+/* src/pages/BarberDashboard.module.scss */
 
+/* Estilos de base reutilizados do ClientDashboard */
 .pageContainer {
   max-width: 900px;
   margin: 0 auto;
@@ -47,40 +48,99 @@
   gap: 1rem;
 }
 
-.appointmentCard {
-  background-color: #1f2937; // Fundo do cartão
-  border: 1px solid #374151; // Borda subtil
-  border-radius: 0.5rem;
-  padding: 1.5rem;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
+/* --- NOVOS ESTILOS E AJUSTES PARA O BARBER DASHBOARD --- */
+
+// Novo: Estilo para o grupo de agendamentos de um dia
+.dateGroup {
+  margin-bottom: 2.5rem; // Espaçamento entre os dias
 }
 
+// Novo: Estilo para o título da data (ex: "terça-feira, 19 de agosto...")
+.dateHeader {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #ffffff;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #374151;
+  margin-bottom: 1.5rem;
+}
+
+// Ajustado: O card de agendamento agora tem uma estrutura mais complexa
+.appointmentCard {
+  background-color: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 0.5rem;
+  padding: 1rem 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center; // Alinha os itens verticalmente
+  gap: 1.5rem;
+}
+
+// Novo: Bloco dedicado para a hora do agendamento
+.appointmentTime {
+  background-color: #374151;
+  padding: 0.75rem;
+  border-radius: 0.375rem;
+  font-weight: bold;
+  font-size: 1.125rem;
+  text-align: center;
+  min-width: 80px; // Largura mínima para manter o alinhamento visual
+}
+
+// Ajustado: Informações do agendamento, agora com mais espaço
 .appointmentInfo {
+  flex-grow: 1; // Faz esta seção ocupar o espaço restante
+  
   strong {
     font-size: 1.125rem;
     display: block;
     color: #ffffff;
   }
+  
   span {
+    display: block; // Coloca cada informação em uma nova linha
     color: #9ca3af;
+    margin-top: 0.25rem;
   }
 }
 
-.cancelButton {
+// Novo: Container para os botões de ação
+.appointmentActions {
+  margin-left: auto; // Empurra os botões para a direita
+}
+
+// Novo: Botão de ação genérico (para "Detalhes", "Editar", etc.)
+.actionButton {
   padding: 0.5rem 1rem;
-  background-color: #450a0a; // Vermelho escuro
-  color: #fecaca; // Vermelho claro
+  background-color: #374151; // Cor neutra
+  color: #e5e7eb;
   font-weight: 500;
-  border: 1px solid #991b1b;
+  border: 1px solid #4b5563;
   border-radius: 0.375rem;
   cursor: pointer;
   transition: background-color 0.2s;
 
   &:hover {
-    background-color: #7f1d1d;
+    background-color: #4b5563;
+  }
+}
+
+// Novo: Estilo para quando não há agendamentos para mostrar
+.emptyState {
+  text-align: center;
+  padding: 3rem;
+  background-color: #1f2937;
+  border-radius: 0.5rem;
+  border: 1px dashed #374151;
+
+  h2 {
+    font-size: 1.5rem;
+    color: #ffffff;
+  }
+
+  p {
+    color: #9ca3af;
+    margin-top: 0.5rem;
   }
 }

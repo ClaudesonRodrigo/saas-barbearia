@@ -54,3 +54,10 @@ export const getClientAppointments = (token) => {
     method: 'GET',
   });
 };
+
+// Função para o dono da barbearia buscar seus agendamentos
+export const getBarbershopAppointments = (token) => {
+  return fetchApi('get-barbershop-appointments', token, {
+    method: 'GET',
+  });
+};
