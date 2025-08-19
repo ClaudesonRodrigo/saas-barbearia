@@ -30,7 +30,7 @@ const BookingPage = () => {
   const [isBooking, setIsBooking] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState('');
 
-  console.log("ESTADO ATUAL 'selectedServices':", selectedServices);
+  
 
   // CORRIGIDO: Garantindo que os valores sejam tratados como números
  const { totalPrice, totalDuration } = useMemo(() => {
@@ -44,10 +44,8 @@ const BookingPage = () => {
       },
       { totalPrice: 0, totalDuration: 0 }
     );
-  }, [selectedServices]); 
+  }, [selectedServices]);
 
-  console.log("RESULTADO DO CÁLCULO:", { totalPrice, totalDuration });
-  
   useEffect(() => {
     if (currentUser) {
       setClientName(currentUser.displayName || '');
