@@ -2,8 +2,10 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { getClientAppointments, cancelClientAppointment } from '../services/publicService';
-import styles from './ClientDashboard.module.scss'; // Importamos os nossos novos estilos
+// INSTRUÇÃO 1: A importação de 'cancelClientAppointment' foi removida da linha abaixo,
+// pois não está sendo utilizada no momento.
+import { getClientAppointments } from '../services/clientService'; 
+import styles from './ClientDashboard.module.scss';
 
 const ClientDashboard = () => {
   const [appointments, setAppointments] = useState([]);
@@ -18,6 +20,7 @@ const ClientDashboard = () => {
     setIsLoading(true);
     setError('');
     try {
+      // Esta variável 'token' é mantida, pois é usada na linha seguinte.
       const token = await currentUser.getIdToken();
       const data = await getClientAppointments(token);
       setAppointments(data);
@@ -33,6 +36,8 @@ const ClientDashboard = () => {
     fetchAppointments();
   }, [fetchAppointments]);
 
+  // NOTA: A função de cancelar ainda não existe no backend,
+  // precisaremos criá-la depois.
   const handleCancel = async (barbershopId, appointmentId) => {
     if (!window.confirm("Tem a certeza que deseja cancelar este agendamento?")) {
       return;
@@ -40,10 +45,15 @@ const ClientDashboard = () => {
     try {
       setMessage('');
       setError('');
-      const token = await currentUser.getIdToken();
-      await cancelClientAppointment(barbershopId, appointmentId, token);
-      setMessage("Agendamento cancelado com sucesso!");
-      fetchAppointments();
+      // INSTRUÇÃO 2: A variável 'token' abaixo foi comentada, pois não estava
+      // sendo utilizada dentro desta função.
+      // const token = await currentUser.getIdToken();
+      
+      // Esta função 'cancelClientAppointment' precisará ser criada no backend
+      // e no clientService.js
+      // await cancelClientAppointment(barbershopId, appointmentId, token);
+      setMessage("Função de cancelamento ainda não implementada.");
+      // fetchAppointments(); // Descomentar quando a função estiver pronta
     } catch (err) {
       setError(err.message);
     }
@@ -68,6 +78,8 @@ const ClientDashboard = () => {
                   <div className={styles.appointmentInfo}>
                     <strong>{app.formattedDate} às {app.time}</strong>
                     <span>Serviço: {app.serviceName}</span>
+                    {/* Adicionado para mostrar o nome da barbearia */}
+                    <span className={styles.shopName}>Barbearia: {app.barbershopName}</span> 
                   </div>
                   <button 
                     onClick={() => handleCancel(app.barbershopId, app.id)} 

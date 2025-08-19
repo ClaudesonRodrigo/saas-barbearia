@@ -1,0 +1,6 @@
+# netlify.toml
+
+[functions."scheduled-reminders"]
+  # Esta expressão CRON significa "Execute às 9:00 da manhã, todos os dias".
+  # Minuto | Hora | Dia do Mês | Mês | Dia da Semana
+  schedule = "0 9 * * *"
