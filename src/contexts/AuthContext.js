@@ -1,7 +1,7 @@
 // src/contexts/AuthContext.js
 import { createContext, useState, useEffect, useContext } from 'react';
-import { auth, db } from '../firebase/config'; // Importamos o 'db' do firestore
-import { doc, getDoc } from "firebase/firestore"; // Funções para ler um documento
+import { auth, db } from '../firebase/config';
+import { doc, getDoc } from "firebase/firestore";
 import { 
   onAuthStateChanged, 
   signInWithEmailAndPassword, 
@@ -18,10 +18,21 @@ export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [userRole, setUserRole] = useState(null);
   const [subscriptionStatus, setSubscriptionStatus] = useState(null);
-  const [planId, setPlanId] = useState(null); // Novo estado para o plano
+  const [planId, setPlanId] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const login = (email, password) => signInWithEmailAndPassword(auth, email, password);
+  const login = async (email, password) => {
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+    if (user) {
+      const idTokenResult = await user.getIdTokenResult(true);
+      const role = idTokenResult.claims.role || null;
+      setUserRole(role);
+      return { user, role };
+    }
+    return null;
+  };
+  
   const logout = () => signOut(auth);
 
   useEffect(() => {
@@ -40,7 +51,7 @@ export function AuthProvider({ children }) {
             if (shopDoc.exists()) {
               const shopData = shopDoc.data();
               setSubscriptionStatus(shopData.subscriptionStatus || 'inactive');
-              setPlanId(shopData.planId || null); // Guardamos o ID do plano
+              setPlanId(shopData.planId || null);
             } else {
               setSubscriptionStatus('inactive');
               setPlanId(null);
