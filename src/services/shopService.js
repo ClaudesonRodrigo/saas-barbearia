@@ -9,27 +9,25 @@ const CANCEL_APPOINTMENT_ENDPOINT = '/.netlify/functions/cancel-appointment';
 const GET_SETTINGS_ENDPOINT = '/.netlify/functions/get-shop-settings'; 
 const UPDATE_SETTINGS_ENDPOINT = '/.netlify/functions/update-shop-settings'; 
 const GET_DASHBOARD_STATS_ENDPOINT = '/.netlify/functions/get-dashboard-stats';
+// NOVO ENDPOINT PARA O PAINEL DO BARBEIRO
+const GET_BARBER_APPOINTMENTS_ENDPOINT = '/.netlify/functions/get-barber-appointments';
 
 export const createService = async (serviceData, token) => {
+  // ... (código existente sem alterações)
   try {
     const response = await fetch(CREATE_SERVICE_ENDPOINT, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        // Aqui enviamos o token para o backend saber quem somos
         'Authorization': `Bearer ${token}` 
       },
       body: JSON.stringify(serviceData),
     });
-
     const data = await response.json();
-
     if (!response.ok) {
       throw new Error(data.message || 'Falha ao criar o serviço.');
     }
-
     return data;
-
   } catch (error) {
     console.error("Erro no serviço createService:", error);
     throw error;
@@ -37,22 +35,19 @@ export const createService = async (serviceData, token) => {
 };
 
 export const getServices = async (token) => {
+  // ... (código existente sem alterações)
   try {
     const response = await fetch(GET_SERVICES_ENDPOINT, {
-      method: 'GET', // Embora GET seja o padrão, é bom ser explícito
+      method: 'GET',
       headers: {
-        // Enviamos o token para o backend saber quem somos
         'Authorization': `Bearer ${token}`
       }
     });
     const data = await response.json();
-
     if (!response.ok) {
       throw new Error(data.message || 'Falha ao buscar os serviços.');
     }
-
-    return data; // Retorna a lista de serviços
-
+    return data;
   } catch (error) {
     console.error("Erro no serviço getServices:", error);
     throw error;
@@ -60,23 +55,19 @@ export const getServices = async (token) => {
 };
 
 export const deleteService = async (serviceId, token) => {
+  // ... (código existente sem alterações)
   try {
-    // Note que o ID do serviço é adicionado diretamente na URL
     const response = await fetch(`${DELETE_SERVICE_ENDPOINT}/${serviceId}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${token}`
       }
     });
-
     const data = await response.json();
-
     if (!response.ok) {
       throw new Error(data.message || 'Falha ao deletar o serviço.');
     }
-
     return data;
-
   } catch (error) {
     console.error("Erro no serviço deleteService:", error);
     throw error;
@@ -84,24 +75,21 @@ export const deleteService = async (serviceId, token) => {
 };
 
 export const updateService = async (serviceId, serviceData, token) => {
+  // ... (código existente sem alterações)
   try {
     const response = await fetch(`${UPDATE_SERVICE_ENDPOINT}/${serviceId}`, {
-      method: 'PUT', // Usamos o método PUT para atualização
+      method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(serviceData),
     });
-
     const data = await response.json();
-
     if (!response.ok) {
       throw new Error(data.message || 'Falha ao atualizar o serviço.');
     }
-
     return data;
-
   } catch (error) {
     console.error("Erro no serviço updateService:", error);
     throw error;
@@ -109,8 +97,8 @@ export const updateService = async (serviceId, serviceData, token) => {
 };
 
 export const getDailyAppointments = async (date, token) => {
+  // ... (código existente sem alterações)
   try {
-    // Passamos a data como um "query parameter"
     const response = await fetch(`${GET_APPOINTMENTS_ENDPOINT}?date=${date}`, {
       method: 'GET',
       headers: {
@@ -118,13 +106,10 @@ export const getDailyAppointments = async (date, token) => {
       }
     });
     const data = await response.json();
-
     if (!response.ok) {
       throw new Error(data.message || 'Falha ao buscar agendamentos.');
     }
-
-    return data; // Retorna a lista de agendamentos
-
+    return data;
   } catch (error) {
     console.error("Erro no serviço getDailyAppointments:", error);
     throw error;
@@ -132,6 +117,7 @@ export const getDailyAppointments = async (date, token) => {
 };
 
 export const cancelAppointment = async (appointmentId, token) => {
+  // ... (código existente sem alterações)
   try {
     const response = await fetch(`${CANCEL_APPOINTMENT_ENDPOINT}/${appointmentId}`, {
       method: 'DELETE',
@@ -150,9 +136,8 @@ export const cancelAppointment = async (appointmentId, token) => {
   }
 };
 
-// 👇 NOVAS FUNÇÕES ADICIONADAS 👇
-
 export const getShopSettings = async (token) => {
+  // ... (código existente sem alterações)
   try {
     const response = await fetch(GET_SETTINGS_ENDPOINT, {
       method: 'GET',
@@ -172,6 +157,7 @@ export const getShopSettings = async (token) => {
 };
 
 export const updateShopSettings = async (settingsData, token) => {
+  // ... (código existente sem alterações)
   try {
     const response = await fetch(UPDATE_SETTINGS_ENDPOINT, {
       method: 'PUT',
@@ -191,27 +177,54 @@ export const updateShopSettings = async (settingsData, token) => {
     throw error;
   }
 };
-  export const getDashboardStats = async (token, startDate, endDate) => {
-    try {
-      // Construímos a URL com os parâmetros de data, se existirem
-      let url = GET_DASHBOARD_STATS_ENDPOINT;
-      if (startDate && endDate) {
-        url += `?startDate=${startDate}&endDate=${endDate}`;
-      }
 
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || 'Falha ao buscar as estatísticas.');
-      }
-      return data;
-    } catch (error) {
-      console.error("Erro no serviço getDashboardStats:", error);
-      throw error;
+export const getDashboardStats = async (token, startDate, endDate) => {
+  // ... (código existente sem alterações)
+  try {
+    let url = GET_DASHBOARD_STATS_ENDPOINT;
+    if (startDate && endDate) {
+      url += `?startDate=${startDate}&endDate=${endDate}`;
     }
-  };
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Falha ao buscar as estatísticas.');
+    }
+    return data;
+  } catch (error) {
+    console.error("Erro no serviço getDashboardStats:", error);
+    throw error;
+  }
+};
+
+// --- NOVA FUNÇÃO PARA O PAINEL DO BARBEIRO ---
+
+export const getBarberAppointments = async (token, date) => {
+  try {
+    const url = `${GET_BARBER_APPOINTMENTS_ENDPOINT}?date=${date}`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Falha ao buscar os seus agendamentos.');
+    }
+
+    return data; 
+
+  } catch (error) {
+    console.error("Erro no serviço getBarberAppointments:", error);
+    throw error;
+  }
+};

@@ -67,11 +67,18 @@ const DashboardMetrics = () => {
           <div className={styles.statsGrid}>
             <StatCard 
               title="Faturação Total" 
-              value={`R$ ${stats.totalRevenue.toFixed(2)}`} 
+              // Adicionando a verificação de segurança que tínhamos discutido
+              value={`R$ ${stats.totalRevenue?.toFixed(2) ?? '0.00'}`} 
             />
             <StatCard 
-              title="Total de Agendamentos" 
+              // Título mais claro para evitar confusão
+              title="Total de Agendamentos (Clientes)" 
               value={stats.totalAppointments} 
+            />
+            {/* --- ADICIONE ESTE NOVO CARD AQUI --- */}
+            <StatCard 
+              title="Total de Serviços Prestados" 
+              value={stats.totalServicesSold} 
             />
           </div>
           

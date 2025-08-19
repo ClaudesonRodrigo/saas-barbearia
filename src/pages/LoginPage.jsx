@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import styles from './LoginPage.module.scss'; // Importamos os nossos novos estilos
+import styles from './LoginPage.module.scss';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -14,29 +14,35 @@ const LoginPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      setError('');
-      setLoading(true);
-      const userCredential = await login(email, password);
-      const idTokenResult = await userCredential.user.getIdTokenResult(true);
-      const userRole = idTokenResult.claims.role;
+    setError('');
+    setLoading(true);
 
-      if (userRole === 'superAdmin') {
-        navigate('/super-admin');
-      } else if (userRole === 'shopOwner') {
-        navigate('/dashboard');
-      } else if (userRole === 'barber') {
-        navigate('/minha-agenda');
-      } else if (userRole === 'client') {
-        navigate('/barbearias');
-      } else {
-        navigate('/');
+    try {
+      const { role } = await login(email, password);
+
+      switch (role) {
+        case 'superAdmin':
+          navigate('/super-admin');
+          break;
+        case 'shopOwner':
+          // CORRIGIDO DE VOLTA PARA O ENDEREÇO ORIGINAL E CORRETO
+          navigate('/dashboard'); 
+          break;
+        case 'barber':
+          navigate('/minha-agenda');
+          break;
+        case 'client':
+          navigate('/meus-agendamentos'); 
+          break;
+        default:
+          navigate('/');
       }
     } catch (err) {
       setError('Falha ao fazer login. Verifique o seu e-mail e senha.');
       console.error(err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (

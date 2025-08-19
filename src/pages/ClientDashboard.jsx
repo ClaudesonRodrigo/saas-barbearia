@@ -2,9 +2,8 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-// INSTRUÇÃO 1: A importação de 'cancelClientAppointment' foi removida da linha abaixo,
-// pois não está sendo utilizada no momento.
-import { getClientAppointments } from '../services/clientService'; 
+// PASSO 1: Importamos a nova função de cancelamento que criamos no service.
+import { getClientAppointments, cancelClientAppointment } from '../services/clientService'; 
 import styles from './ClientDashboard.module.scss';
 
 const ClientDashboard = () => {
@@ -12,6 +11,8 @@ const ClientDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  // Novo estado para dar feedback visual durante o cancelamento
+  const [cancellingId, setCancellingId] = useState(null);
   
   const { currentUser } = useAuth();
 
@@ -20,7 +21,6 @@ const ClientDashboard = () => {
     setIsLoading(true);
     setError('');
     try {
-      // Esta variável 'token' é mantida, pois é usada na linha seguinte.
       const token = await currentUser.getIdToken();
       const data = await getClientAppointments(token);
       setAppointments(data);
@@ -36,26 +36,36 @@ const ClientDashboard = () => {
     fetchAppointments();
   }, [fetchAppointments]);
 
-  // NOTA: A função de cancelar ainda não existe no backend,
-  // precisaremos criá-la depois.
-  const handleCancel = async (barbershopId, appointmentId) => {
+  // PASSO 2: Preenchendo a lógica da função de cancelamento.
+  const handleCancel = async (appointmentId) => {
+    // Usamos window.confirm para o usuário ter certeza da ação.
     if (!window.confirm("Tem a certeza que deseja cancelar este agendamento?")) {
       return;
     }
+
+    setCancellingId(appointmentId); // Ativa o estado de 'cancelando' para este item
+    setMessage('');
+    setError('');
+
     try {
-      setMessage('');
-      setError('');
-      // INSTRUÇÃO 2: A variável 'token' abaixo foi comentada, pois não estava
-      // sendo utilizada dentro desta função.
-      // const token = await currentUser.getIdToken();
+      // Pegamos o token do usuário logado.
+      const token = await currentUser.getIdToken();
       
-      // Esta função 'cancelClientAppointment' precisará ser criada no backend
-      // e no clientService.js
-      // await cancelClientAppointment(barbershopId, appointmentId, token);
-      setMessage("Função de cancelamento ainda não implementada.");
-      // fetchAppointments(); // Descomentar quando a função estiver pronta
+      // Chamamos nossa função de serviço, que vai chamar o backend.
+      const result = await cancelClientAppointment(appointmentId, token);
+      
+      // Mostramos a mensagem de sucesso que veio do backend.
+      setMessage(result.message);
+      
+      // ATUALIZAÇÃO INSTANTÂNEA: Removemos o agendamento da lista na tela.
+      setAppointments(prevAppointments => 
+        prevAppointments.filter(app => app.id !== appointmentId)
+      );
+
     } catch (err) {
       setError(err.message);
+    } finally {
+      setCancellingId(null); // Desativa o estado de 'cancelando'
     }
   };
 
@@ -78,14 +88,15 @@ const ClientDashboard = () => {
                   <div className={styles.appointmentInfo}>
                     <strong>{app.formattedDate} às {app.time}</strong>
                     <span>Serviço: {app.serviceName}</span>
-                    {/* Adicionado para mostrar o nome da barbearia */}
                     <span className={styles.shopName}>Barbearia: {app.barbershopName}</span> 
                   </div>
+                  {/* PASSO 3: Atualizamos o botão para dar feedback de loading */}
                   <button 
-                    onClick={() => handleCancel(app.barbershopId, app.id)} 
+                    onClick={() => handleCancel(app.id)} 
                     className={styles.cancelButton}
+                    disabled={cancellingId === app.id} // Desativa o botão durante o cancelamento
                   >
-                    Cancelar Agendamento
+                    {cancellingId === app.id ? 'A cancelar...' : 'Cancelar Agendamento'}
                   </button>
                 </li>
               ))}
