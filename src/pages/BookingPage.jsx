@@ -30,18 +30,24 @@ const BookingPage = () => {
   const [isBooking, setIsBooking] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState('');
 
+  console.log("ESTADO ATUAL 'selectedServices':", selectedServices);
+
   // CORRIGIDO: Garantindo que os valores sejam tratados como números
-  const { totalPrice, totalDuration } = useMemo(() => {
+ const { totalPrice, totalDuration } = useMemo(() => {
     return selectedServices.reduce(
       (acc, service) => {
+        // Esta lógica agora vai funcionar, pois confirmamos que 'service.price' 
+        // e 'service.duration' existem e são números.
         acc.totalPrice += Number(service.price) || 0;
         acc.totalDuration += Number(service.duration) || 0;
         return acc;
       },
       { totalPrice: 0, totalDuration: 0 }
     );
-  }, [selectedServices]);
+  }, [selectedServices]); 
 
+  console.log("RESULTADO DO CÁLCULO:", { totalPrice, totalDuration });
+  
   useEffect(() => {
     if (currentUser) {
       setClientName(currentUser.displayName || '');
