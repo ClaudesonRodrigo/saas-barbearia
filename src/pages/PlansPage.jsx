@@ -8,13 +8,28 @@ import styles from './PlansPage.module.scss';
 
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
 
+// --- NOVOS PLANOS E VALORES ATUALIZADOS ---
 const plans = [
-  { id: 'monthly_plan', name: 'Plano Mensal', price: 59.90, description: 'Acesso completo e até 4 barbeiros.' },
-  { id: 'semestral_plan', name: 'Plano Semestral', price: 299.40, description: 'Acesso por 6 meses e até 10 barbeiros.' },
-  { id: 'yearly_plan', name: 'Plano Anual', price: 478.80, description: 'Acesso por 1 ano e barbeiros ilimitados.' },
+  { 
+    id: 'monthly_plan', 
+    name: 'Plano Mensal', 
+    price: 49.90, 
+    description: 'Acesso completo e até 1 barbeiro (ideal para autônomos).' 
+  },
+  { 
+    id: 'semestral_plan', 
+    name: 'Plano Semestral', 
+    price: 249.90, 
+    description: 'Acesso por 6 meses e até 5 barbeiros.' 
+  },
+  { 
+    id: 'yearly_plan', 
+    name: 'Plano Anual', 
+    price: 419.90, 
+    description: 'Acesso por 1 ano e barbeiros ilimitados.' 
+  },
 ];
 
-// Componente de ícone para manter o JSX limpo
 const ScissorsIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="6" cy="6" r="3" />
@@ -32,7 +47,7 @@ const PlansPage = () => {
 
   const handleChoosePlan = async (plan) => {
     if (!currentUser) {
-      setError("Você precisa de estar autenticado para escolher um plano.");
+      setError("Você precisa estar autenticado para escolher um plano.");
       return;
     }
 
