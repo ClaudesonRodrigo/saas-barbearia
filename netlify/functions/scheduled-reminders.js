@@ -5,17 +5,15 @@ const { getFirestore } = require('firebase-admin/firestore');
 const twilio = require('twilio');
 
 // --- Configurações ---
-// Firebase: Usa a variável de ambiente que já tínhamos
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 if (getApps().length === 0) {
   initializeApp({ credential: cert(serviceAccount) });
 }
 const db = getFirestore();
 
-// Twilio: Pega as credenciais que você acabou de configurar na Netlify
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
-const twilioPhoneNumber = process.env.TWILIO_PHONE_NUMBER; // O número do sandbox
+const twilioPhoneNumber = process.env.TWILIO_PHONE_NUMBER;
 const twilioClient = twilio(accountSid, authToken);
 // --- Fim das Configurações ---
 
@@ -24,17 +22,16 @@ exports.handler = async function(event, context) {
 
   try {
     // 1. CALCULAR A JANELA DE TEMPO
-    // Queremos agendamentos que acontecerão entre 24h e 25h a partir de agora,
-    // para garantir que a função pegue todos os agendamentos do dia seguinte.
     const now = new Date();
     const startTime = new Date(now.getTime() + 24 * 60 * 60 * 1000); 
-    const endTime = new Date(startTime.getTime() + 1 * 60 * 60 * 1000); // Janela de 1 hora para buscar
+    const endTime = new Date(startTime.getTime() + 1 * 60 * 60 * 1000);
 
     // 2. BUSCAR AGENDAMENTOS NO FIRESTORE
+    // Buscando na coleção correta 'schedules'
     const snapshot = await db.collection('schedules')
       .where('status', '==', 'confirmed')
-      .where('startTime', '>=', startTime.toISOString())
-      .where('startTime', '<', endTime.toISOString())
+      .where('startTime', '>=', startTime)
+      .where('startTime', '<', endTime)
       .get();
 
     if (snapshot.empty) {
@@ -48,8 +45,9 @@ exports.handler = async function(event, context) {
     for (const doc of snapshot.docs) {
       const schedule = doc.data();
       
-      const clientDoc = await db.collection('clients').doc(schedule.clientId).get();
-      if (!clientDoc.exists || !clientDoc.data().wantsWhatsappReminders || !clientDoc.data().whatsappNumber) {
+      // Buscando na coleção correta 'users'
+      const clientDoc = await db.collection('users').doc(schedule.clientId).get();
+      if (!clientDoc.exists() || !clientDoc.data().wantsWhatsappReminders || !clientDoc.data().whatsappNumber) {
         console.log(`Cliente ${schedule.clientId} não tem dados de WhatsApp ou não quer receber lembretes. Pulando.`);
         continue;
       }
@@ -58,8 +56,7 @@ exports.handler = async function(event, context) {
       const client = clientDoc.data();
       const barbershop = barbershopDoc.data();
 
-      // Formata a data para o formato brasileiro
-      const appointmentDate = new Date(schedule.startTime).toLocaleString('pt-BR', {
+      const appointmentDate = new Date(schedule.startTime.toDate()).toLocaleString('pt-BR', {
         timeZone: 'America/Sao_Paulo',
         day: '2-digit',
         month: '2-digit',
@@ -72,11 +69,21 @@ exports.handler = async function(event, context) {
       
       console.log(`Enviando mensagem para ${client.whatsappNumber}: "${messageBody}"`);
 
-      await twilioClient.messages.create({
+      // --- ATUALIZAÇÃO APLICADA AQUI ---
+      // a. Capturamos a resposta do Twilio ao enviar a mensagem
+      const message = await twilioClient.messages.create({
          from: `whatsapp:${twilioPhoneNumber}`,
          to: `whatsapp:${client.whatsappNumber}`,
          body: messageBody
       });
+
+      // b. Salvamos o ID (SID) da mensagem no nosso documento de agendamento
+      await doc.ref.update({
+        notificationSid: message.sid
+      });
+
+      console.log(`Mensagem enviada com SID: ${message.sid}`);
+      // --- FIM DA ATUALIZAÇÃO ---
     }
 
     return { statusCode: 200, body: "Lembretes enviados com sucesso." };

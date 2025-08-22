@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { getPublicBarbershopData, getAvailableSlots, createAppointment } from '../services/publicService';
 import styles from './BookingPage.module.scss';
 import WhatsAppConsentForm from '../components/WhatsAppConsentForm/WhatsAppConsentForm';
+import WhatsAppButton from '../components/WhatsAppButton/WhatsAppButton';
 
 const BookingPage = () => {
   const { slug } = useParams(); 
@@ -30,14 +31,9 @@ const BookingPage = () => {
   const [isBooking, setIsBooking] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState('');
 
-  
-
-  // CORRIGIDO: Garantindo que os valores sejam tratados como números
- const { totalPrice, totalDuration } = useMemo(() => {
+  const { totalPrice, totalDuration } = useMemo(() => {
     return selectedServices.reduce(
       (acc, service) => {
-        // Esta lógica agora vai funcionar, pois confirmamos que 'service.price' 
-        // e 'service.duration' existem e são números.
         acc.totalPrice += Number(service.price) || 0;
         acc.totalDuration += Number(service.duration) || 0;
         return acc;
@@ -272,6 +268,12 @@ const BookingPage = () => {
           </form>
         </div>
       </div>
+
+      {/* O BOTÃO FOI MOVIDO PARA CÁ */}
+      <WhatsAppButton 
+        phoneNumber={shop?.phone}
+        message={`Olá! Tenho uma dúvida sobre a barbearia "${shop?.name}".`} 
+      />
     </div>
   );
 };
