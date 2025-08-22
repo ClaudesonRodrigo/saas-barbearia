@@ -7,6 +7,7 @@ const REGISTER_CLIENT_ENDPOINT = '/.netlify/functions/register-client';
 const GET_CLIENT_APPOINTMENTS_ENDPOINT = '/.netlify/functions/get-client-appointments';
 const CANCEL_CLIENT_APPOINTMENT_ENDPOINT = '/.netlify/functions/cancel-client-appointment';
 const GET_ALL_BARBERSHOPS_ENDPOINT = '/.netlify/functions/get-all-barbershops';
+const GET_LATEST_BARBERSHOPS_ENDPOINT = '/.netlify/functions/get-latest-barbershops';
 
 export const getPublicBarbershopData = async (slug) => {
   try {
@@ -144,6 +145,19 @@ export const getAllBarbershops = async () => {
     return data;
   } catch (error) {
     console.error("Erro no serviço getAllBarbershops:", error);
+    throw error;
+  }
+};
+export const getLatestBarbershops = async () => {
+  try {
+    const response = await fetch(GET_LATEST_BARBERSHOPS_ENDPOINT);
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Falha ao buscar as últimas barbearias.');
+    }
+    return data;
+  } catch (error) {
+    console.error("Erro no serviço getLatestBarbershops:", error);
     throw error;
   }
 };

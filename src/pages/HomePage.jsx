@@ -1,14 +1,36 @@
 // src/pages/HomePage.jsx
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import styles from './HomePage.module.scss';
-import PlansPage from './PlansPage'; // Vamos reutilizar a nossa página de planos
+import PlansPage from './PlansPage';
+// 1. Importamos nosso novo serviço
+import { getLatestBarbershops } from '../services/publicService';
 
 const HomePage = () => {
+  // 2. Criamos estados para armazenar as barbearias
+  const [latestShops, setLatestShops] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // 3. Buscamos os dados quando a página carrega
+  useEffect(() => {
+    const fetchLatest = async () => {
+      try {
+        const data = await getLatestBarbershops();
+        setLatestShops(data);
+      } catch (error) {
+        console.error("Erro ao carregar últimas barbearias:", error);
+        // Não definimos um erro de UI para não quebrar a página principal
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchLatest();
+  }, []);
+
   return (
     <div className={styles.pageContainer}>
-      {/* Secção Hero */}
+      {/* Seção Hero (sem alterações) */}
       <section className={`${styles.section} ${styles.hero}`}>
         <div>
           <h1 className={styles.title}>
@@ -16,7 +38,7 @@ const HomePage = () => {
             <span className={styles.highlight}>Simples, Rápido e Profissional.</span>
           </h1>
           <p className={styles.subtitle}>
-            A nossa plataforma de agendamento ajuda-o a gerir os seus horários, clientes e equipa, tudo num só lugar. Dedique mais tempo ao que você faz de melhor: cortar cabelo.
+            Nossa plataforma de agendamento ajuda a gerir seus horários, clientes e equipe, tudo num só lugar. Dedique mais tempo ao que você faz de melhor: cortar cabelo.
           </p>
           <Link to="/register" className={styles.ctaButton}>
             Comece Agora (Grátis por 14 dias)
@@ -24,9 +46,28 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Secção de Funcionalidades */}
+      {/* NOVA SEÇÃO: Últimas Barbearias */}
+      <section className={`${styles.section} ${styles.latestShopsSection}`}>
+        <h2 className={styles.sectionTitle}>Junte-se às barbearias que já estão inovando</h2>
+        <div className={styles.shopsGrid}>
+          {isLoading ? <p>Carregando...</p> : latestShops.map(shop => (
+            <div key={shop.id} className={styles.shopCard}>
+              <div className={styles.logoContainer}>
+                {shop.logoUrl ? <img src={shop.logoUrl} alt={shop.name} className={styles.shopLogo} /> : <span>✂️</span>}
+              </div>
+              <h3 className={styles.shopName}>{shop.name}</h3>
+              <p className={styles.shopAddress}>{shop.address}</p>
+              <Link to={`/agendar/${shop.slug}`} className={styles.shopButton}>
+                Ver Agenda
+              </Link>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Seção de Funcionalidades (Melhorada) */}
       <section className={`${styles.section} ${styles.features}`}>
-        <h2 className={styles.sectionTitle}>Tudo o que precisa para crescer</h2>
+        <h2 className={styles.sectionTitle}>Tudo o que você precisa para crescer</h2>
         <div className={styles.featuresGrid}>
           <div className={styles.featureCard}>
             <div className={styles.featureIcon}>📅</div>
@@ -36,29 +77,19 @@ const HomePage = () => {
           <div className={styles.featureCard}>
             <div className={styles.featureIcon}>💳</div>
             <h3 className={styles.featureTitle}>Gestão de Planos</h3>
-            <p className={styles.featureText}>Integração de pagamentos com a Stripe para gerir as suas assinaturas de forma segura e automática.</p>
+            <p className={styles.featureText}>Integração de pagamentos com a Stripe para gerir suas assinaturas de forma segura e automática.</p>
           </div>
           <div className={styles.featureCard}>
             <div className={styles.featureIcon}>📈</div>
             <h3 className={styles.featureTitle}>Relatórios Simples</h3>
-            <p className={styles.featureText}>Acompanhe o seu faturamento, total de agendamentos e serviços mais populares para tomar as melhores decisões.</p>
+            <p className={styles.featureText}>Acompanhe seu faturamento, total de agendamentos e serviços mais populares para tomar as melhores decisões.</p>
           </div>
         </div>
       </section>
-
-      {/* Secção de Planos (Reutilizamos a página de planos) */}
+      
+      {/* Seção de Planos */}
       <section className={styles.section}>
         <PlansPage />
-      </section>
-
-      {/* Secção de Garantia */}
-      <section className={`${styles.section} ${styles.guarantee}`}>
-        <div className={styles.guaranteeCard}>
-          <h2 className={styles.sectionTitle}>A sua Satisfação é a nossa Prioridade</h2>
-          <p className={styles.subtitle}>
-            Acreditamos tanto na nossa plataforma que oferecemos uma garantia especial. Se nos primeiros 30 dias você não estiver 100% satisfeito, pode cancelar a sua assinatura e receber 80% do seu dinheiro de volta, sem perguntas.
-          </p>
-        </div>
       </section>
     </div>
   );

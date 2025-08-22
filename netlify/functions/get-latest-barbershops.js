@@ -1,4 +1,4 @@
-// netlify/functions/get-all-barbershops.js
+// netlify/functions/get-latest-barbershops.js
 
 const { initializeApp, getApps, cert } = require('firebase-admin/app');
 const { getFirestore } = require('firebase-admin/firestore');
@@ -18,23 +18,22 @@ exports.handler = async function(event, context) {
 
   try {
     const barbershopsRef = db.collection('barbershops');
-    const snapshot = await barbershopsRef.where('status', '==', 'active').get();
+    const snapshot = await barbershopsRef
+      .where('status', '==', 'active')       // Filtra apenas as ativas
+      .orderBy('createdAt', 'desc')         // Ordena pelas mais recentes
+      .limit(3)                             // Limita o resultado a 3
+      .get();
 
     if (snapshot.empty) {
-      return {
-        statusCode: 200,
-        body: JSON.stringify([]),
-      };
+      return { statusCode: 200, body: JSON.stringify([]) };
     }
 
-    // CORREÇÃO: Usando .map() para mais segurança e clareza
     const barbershops = snapshot.docs.map(doc => {
       const data = doc.data();
       return {
         id: doc.id,
-        name: data.name || 'Nome não definido',
-        // Acesso seguro à propriedade aninhada 'address'
-        address: data.location?.address || 'Endereço não informado', 
+        name: data.name,
+        address: data.location?.address || 'Endereço não informado', // Acesso seguro ao endereço
         slug: data.publicUrlSlug,
         logoUrl: data.logoUrl || null
       };
@@ -46,7 +45,7 @@ exports.handler = async function(event, context) {
     };
 
   } catch (error) {
-    console.error("Erro ao buscar todas as barbearias:", error);
+    console.error("Erro ao buscar últimas barbearias:", error);
     return { 
       statusCode: 500, 
       body: JSON.stringify({ message: 'Falha ao buscar dados.' }) 
