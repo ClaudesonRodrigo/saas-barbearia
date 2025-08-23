@@ -17,12 +17,18 @@ const TIME_ZONE = 'America/Sao_Paulo';
 const slotInterval = 30; // Intervalo de 30 minutos
 
 exports.handler = async function(event, context) {
+
+   console.log("--- INICIANDO get-available-slots ---");
+
   if (event.httpMethod !== 'GET') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
   try {
     const { slug, date, duration, barberId } = event.queryStringParameters;
+
+    console.log("PARÂMETROS RECEBIDOS:", { slug, date, duration, barberId });
+      
     if (!slug || !date || !duration || !barberId) {
       return { statusCode: 400, body: JSON.stringify({ message: "Dados insuficientes para buscar horários." }) };
     }
@@ -36,11 +42,13 @@ exports.handler = async function(event, context) {
     const shopDoc = shopQuery.docs[0];
     const barbershopId = shopDoc.id;
     const shopData = shopDoc.data();
+    console.log("DADOS DA BARBEARIA:", shopData);
 
     const dailyBusinessHours = {
       start: shopData.businessHours?.start || '09:00',
       end: shopData.businessHours?.end || '22:00', // Exemplo de horário de fechamento
     };
+    console.log("HORÁRIO DE FUNCIONAMENTO:", dailyBusinessHours);
     const lunchBreak = {
       start: shopData.lunchBreak?.start || '12:00',
       end: shopData.lunchBreak?.end || '13:00',
@@ -48,7 +56,9 @@ exports.handler = async function(event, context) {
 
     const selectedDayStart = new Date(`${date}T00:00:00.000Z`);
     const selectedDayEnd = new Date(`${date}T23:59:59.999Z`);
-
+    console.log("INÍCIO DO DIA (SAO_PAULO TIME):", currentTime.toString());
+    console.log("FIM DO DIA (SAO_PAULO TIME):", dayEnd.toString());
+    console.log("FIM DO DIA (UTC):", dayEnd.toISOString());
     // CORRIGIDO: Buscando na coleção principal 'schedules'
     const appointmentsQuery = db.collection('schedules')
       .where('barbershopId', '==', barbershopId)
@@ -103,7 +113,7 @@ exports.handler = async function(event, context) {
       }
       currentTime = new Date(currentTime.getTime() + slotInterval * 60000);
     }
-    
+     console.log("HORÁRIOS DISPONÍVEIS GERADOS:", availableSlots);
     return {
       statusCode: 200,
       body: JSON.stringify(availableSlots)
