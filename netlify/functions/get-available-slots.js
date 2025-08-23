@@ -4,7 +4,6 @@ const { initializeApp, getApps, cert } = require('firebase-admin/app');
 const { getFirestore } = require('firebase-admin/firestore');
 const { fromZonedTime, toZonedTime, format } = require('date-fns-tz');
 
-// Inicialização do Firebase Admin
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 if (getApps().length === 0) {
   initializeApp({
@@ -14,21 +13,19 @@ if (getApps().length === 0) {
 const db = getFirestore();
 
 const TIME_ZONE = 'America/Sao_Paulo';
-const slotInterval = 30; // Intervalo de 30 minutos
+const slotInterval = 30;
 
 exports.handler = async function(event, context) {
-
-   console.log("--- INICIANDO get-available-slots ---");
-
+  console.log("--- INICIANDO get-available-slots ---");
+  
   if (event.httpMethod !== 'GET') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
   try {
     const { slug, date, duration, barberId } = event.queryStringParameters;
-
     console.log("PARÂMETROS RECEBIDOS:", { slug, date, duration, barberId });
-      
+
     if (!slug || !date || !duration || !barberId) {
       return { statusCode: 400, body: JSON.stringify({ message: "Dados insuficientes para buscar horários." }) };
     }
@@ -46,20 +43,28 @@ exports.handler = async function(event, context) {
 
     const dailyBusinessHours = {
       start: shopData.businessHours?.start || '09:00',
-      end: shopData.businessHours?.end || '22:00', // Exemplo de horário de fechamento
+      end: shopData.businessHours?.end || '22:00',
     };
-    console.log("HORÁRIO DE FUNCIONAMENTO:", dailyBusinessHours);
     const lunchBreak = {
       start: shopData.lunchBreak?.start || '12:00',
       end: shopData.lunchBreak?.end || '13:00',
     };
+    console.log("HORÁRIO DE FUNCIONAMENTO:", dailyBusinessHours);
 
-    const selectedDayStart = new Date(`${date}T00:00:00.000Z`);
-    const selectedDayEnd = new Date(`${date}T23:59:59.999Z`);
+    const [startHour, startMinute] = dailyBusinessHours.start.split(':');
+    let currentTime = fromZonedTime(`${date}T${startHour}:${startMinute}:00`, TIME_ZONE);
+
+    const [endHour, endMinute] = dailyBusinessHours.end.split(':');
+    let dayEnd = fromZonedTime(`${date}T${endHour}:${endMinute}:00`, TIME_ZONE);
+    
+    // --- CORREÇÃO: Os console.log foram movidos para depois da inicialização das variáveis ---
     console.log("INÍCIO DO DIA (SAO_PAULO TIME):", currentTime.toString());
     console.log("FIM DO DIA (SAO_PAULO TIME):", dayEnd.toString());
     console.log("FIM DO DIA (UTC):", dayEnd.toISOString());
-    // CORRIGIDO: Buscando na coleção principal 'schedules'
+    
+    const selectedDayStart = new Date(`${date}T00:00:00.000Z`);
+    const selectedDayEnd = new Date(`${date}T23:59:59.999Z`);
+
     const appointmentsQuery = db.collection('schedules')
       .where('barbershopId', '==', barbershopId)
       .where('barberId', '==', barberId)
@@ -77,12 +82,6 @@ exports.handler = async function(event, context) {
 
     const availableSlots = [];
     
-    const [startHour, startMinute] = dailyBusinessHours.start.split(':');
-    let currentTime = fromZonedTime(`${date}T${startHour}:${startMinute}:00`, TIME_ZONE);
-
-    const [endHour, endMinute] = dailyBusinessHours.end.split(':');
-    let dayEnd = fromZonedTime(`${date}T${endHour}:${endMinute}:00`, TIME_ZONE);
-
     const [lunchStartHour, lunchStartMinute] = lunchBreak.start.split(':');
     let lunchStart = fromZonedTime(`${date}T${lunchStartHour}:${lunchStartMinute}:00`, TIME_ZONE);
 
@@ -113,14 +112,15 @@ exports.handler = async function(event, context) {
       }
       currentTime = new Date(currentTime.getTime() + slotInterval * 60000);
     }
-     console.log("HORÁRIOS DISPONÍVEIS GERADOS:", availableSlots);
+    
+    console.log("HORÁRIOS DISPONÍVEIS GERADOS:", availableSlots);
     return {
       statusCode: 200,
       body: JSON.stringify(availableSlots)
     };
 
   } catch (error) {
-    console.error("Erro em get-available-slots:", error);
+    console.error("ERRO na função get-available-slots:", error);
     return { 
       statusCode: 500, 
       body: JSON.stringify({ message: `Falha ao buscar horários: ${error.message}` }) 
