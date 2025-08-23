@@ -15,13 +15,12 @@ const db = getFirestore();
 const authAdmin = getAuth();
 
 exports.handler = async function(event, context) {
-  // Esta função só aceita requisições DELETE
   if (event.httpMethod !== 'DELETE') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
   try {
-    // --- LÓGICA DE SEGURANÇA ---
+    // 1. Segurança: Verificamos se o utilizador é um Dono de Barbearia
     const token = event.headers.authorization.split("Bearer ")[1];
     const decodedToken = await authAdmin.verifyIdToken(token);
     const { role, barbershopId } = decodedToken;
@@ -29,16 +28,28 @@ exports.handler = async function(event, context) {
     if (role !== 'shopOwner' || !barbershopId) {
       return { statusCode: 403, body: JSON.stringify({ message: "Acesso negado." }) };
     }
-    // --- FIM DA LÓGICA DE SEGURANÇA ---
-
+    
+    // 2. Pegamos o ID do agendamento a ser cancelado
     const appointmentId = event.path.split("/").pop();
 
     if (!appointmentId) {
       return { statusCode: 400, body: JSON.stringify({ message: "ID do agendamento não fornecido." }) };
     }
 
-    const appointmentRef = db.collection('barbershops').doc(barbershopId).collection('appointments').doc(appointmentId);
-    
+    // 3. CORREÇÃO: Apontamos para a coleção principal 'schedules'
+    const appointmentRef = db.collection('schedules').doc(appointmentId);
+    const doc = await appointmentRef.get();
+
+    if (!doc.exists) {
+      return { statusCode: 404, body: JSON.stringify({ message: "Agendamento não encontrado." }) };
+    }
+
+    // 4. Segurança extra: Verificamos se o agendamento pertence à barbearia do dono logado
+    if (doc.data().barbershopId !== barbershopId) {
+      return { statusCode: 403, body: JSON.stringify({ message: "Você não tem permissão para cancelar este agendamento." }) };
+    }
+
+    // 5. Se tudo estiver correto, apagamos o agendamento
     await appointmentRef.delete();
 
     return { 
@@ -47,7 +58,7 @@ exports.handler = async function(event, context) {
     };
 
   } catch (error) {
-    console.error("Erro ao cancelar agendamento:", error);
+    console.error("Erro ao cancelar agendamento pelo dono:", error);
     return { 
       statusCode: 500, 
       body: JSON.stringify({ message: 'Falha ao cancelar o agendamento.' }) 

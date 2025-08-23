@@ -107,3 +107,35 @@
   color: #bbf7d0;
   text-align: center;
 }
+/* Adicione estas classes ao final do seu ficheiro SCSS */
+
+.whatsappInputContainer {
+  display: flex;
+  align-items: center;
+  border: 1px solid #4b5563;
+  border-radius: 0.375rem;
+  background-color: #374151;
+  
+  &:focus-within {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
+  }
+}
+
+.countryCode {
+  padding: 0.75rem;
+  color: #9ca3af;
+  border-right: 1px solid #4b5563;
+}
+
+.input {
+  /* Removemos a borda e o fundo do input para ele se mesclar */
+  border: none;
+  background-color: transparent;
+  flex-grow: 1;
+
+  &:focus {
+    box-shadow: none;
+    border-color: transparent;
+  }
+}

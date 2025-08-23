@@ -2,12 +2,10 @@
 
 const SIGNATURE_ENDPOINT = '/.netlify/functions/generate-upload-signature';
 
-/**
- * Pede ao nosso back-end uma assinatura segura para o upload.
- * @param {string} token O token de autenticação do utilizador.
- * @returns {Promise<object>} Os dados da assinatura (signature, timestamp, etc.).
- */
 export const getUploadSignature = async (token) => {
+  // AQUI ESTÁ O NOSSO SEGUNDO "ESPIÃO"
+  console.log('%c[Passo 2] Serviço chamado! A pedir assinatura ao backend...', 'color: yellow; font-size: 16px;');
+
   try {
     const response = await fetch(SIGNATURE_ENDPOINT, {
       method: 'POST',
@@ -26,13 +24,6 @@ export const getUploadSignature = async (token) => {
   }
 };
 
-/**
- * Envia a imagem diretamente para o Cloudinary usando a assinatura segura.
- * @param {File} file O ficheiro da imagem a ser enviado.
- * @param {object} signatureData Os dados da assinatura obtidos do nosso back-end.
- * @param {function} onProgress Callback para acompanhar o progresso do upload.
- * @returns {Promise<string>} A URL segura da imagem no Cloudinary.
- */
 export const uploadToCloudinary = (file, signatureData, onProgress) => {
   return new Promise((resolve, reject) => {
     const { signature, timestamp, apiKey, cloudName } = signatureData;
@@ -47,7 +38,6 @@ export const uploadToCloudinary = (file, signatureData, onProgress) => {
     const xhr = new XMLHttpRequest();
     xhr.open('POST', url, true);
 
-    // Acompanha o progresso do upload
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable && onProgress) {
         const progress = (event.loaded / event.total) * 100;
