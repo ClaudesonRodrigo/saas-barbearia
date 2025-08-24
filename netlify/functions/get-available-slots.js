@@ -13,7 +13,7 @@ if (getApps().length === 0) {
 const db = getFirestore();
 
 const TIME_ZONE = 'America/Sao_Paulo';
-const slotInterval = 30;
+const slotInterval = 30; // Intervalo de 30 minutos
 
 exports.handler = async function(event, context) {
   if (event.httpMethod !== 'GET') {
@@ -45,6 +45,7 @@ exports.handler = async function(event, context) {
       end: shopData.lunchBreak?.end || '13:00',
     };
 
+    // Cria objetos de data que representam o início e o fim do dia NA NOSSA TIMEZONE
     const selectedDayStart = fromZonedTime(`${date}T00:00:00`, TIME_ZONE);
     const selectedDayEnd = fromZonedTime(`${date}T23:59:59`, TIME_ZONE);
 
@@ -59,6 +60,7 @@ exports.handler = async function(event, context) {
     const bookedSlots = [];
     appointmentsSnapshot.forEach(doc => {
       const bookingData = doc.data();
+      // Converte o Timestamp do Firestore para a nossa timezone para comparação
       const zonedDate = toZonedTime(bookingData.startTime.toDate(), TIME_ZONE);
       bookedSlots.push({ start: zonedDate, duration: bookingData.serviceDuration || 30 });
     });
@@ -77,6 +79,7 @@ exports.handler = async function(event, context) {
     const [lunchEndHour, lunchEndMinute] = lunchBreak.end.split(':');
     let lunchEnd = fromZonedTime(`${date}T${lunchEndHour}:${lunchEndMinute}:00`, TIME_ZONE);
 
+    // Pega a data e hora atuais e converte para a nossa timezone
     const now = toZonedTime(new Date(), TIME_ZONE);
     const isToday = format(now, 'yyyy-MM-dd') === date;
 
