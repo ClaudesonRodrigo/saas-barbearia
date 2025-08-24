@@ -1,7 +1,6 @@
 // src/components/WhatsAppConsentForm/WhatsAppConsentForm.jsx
 
 import React, { useState } from 'react';
-// CORREÇÃO APLICADA AQUI
 import { useAuth } from '../../contexts/AuthContext'; 
 import { updateClientWhatsappInfo } from '../../services/clientService';
 import styles from './WhatsAppConsentForm.module.scss';
@@ -10,7 +9,6 @@ const WhatsAppConsentForm = () => {
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [consentChecked, setConsentChecked] = useState(false);
   
-  // Estados para feedback ao usuário
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -30,14 +28,21 @@ const WhatsAppConsentForm = () => {
     setIsLoading(true);
     try {
       const token = await currentUser.getIdToken();
+
+      // --- LÓGICA DE FORMATAÇÃO DO NÚMERO ---
+      // 1. Limpa tudo que não for número do input do usuário.
+      const cleanedNumber = whatsappNumber.replace(/\D/g, '');
+      // 2. Garante que o número final sempre comece com +55.
+      const finalNumber = `+55${cleanedNumber}`;
+      // --- FIM DA LÓGICA ---
+
       const dataToUpdate = {
-        whatsappNumber: whatsappNumber,
+        whatsappNumber: finalNumber, // Salva o número já formatado
         wantsWhatsappReminders: consentChecked
       };
 
       const response = await updateClientWhatsappInfo(dataToUpdate, token);
       setSuccess(response.message);
-      // Desabilita o formulário após o sucesso para não enviar de novo
     } catch (err) {
       setError(err.message || "Ocorreu uma falha ao salvar seu número.");
     } finally {
@@ -45,7 +50,6 @@ const WhatsAppConsentForm = () => {
     }
   };
 
-  // Se já tivermos uma mensagem de sucesso, mostramos apenas ela.
   if (success) {
     return (
       <div className={styles.container}>
@@ -61,16 +65,19 @@ const WhatsAppConsentForm = () => {
       
       <form onSubmit={handleSubmit}>
         <div className={styles.formGroup}>
-          <label htmlFor="whatsappNumber">Seu número do WhatsApp</label>
-          <input
-            id="whatsappNumber"
-            type="tel"
-            value={whatsappNumber}
-            onChange={(e) => setWhatsappNumber(e.target.value)}
-            placeholder="+55 (XX) XXXXX-XXXX"
-            required
-            className={styles.input}
-          />
+          <label htmlFor="whatsappNumber">Seu número do WhatsApp (com DDD)</label>
+          <div className={styles.whatsappInputContainer}>
+            <span className={styles.countryCode}>+55</span>
+            <input
+              id="whatsappNumber"
+              type="tel"
+              value={whatsappNumber}
+              onChange={(e) => setWhatsappNumber(e.target.value)}
+              placeholder=" (XX) XXXXX-XXXX"
+              required
+              className={styles.input}
+            />
+          </div>
         </div>
 
         <div className={styles.checkboxGroup}>

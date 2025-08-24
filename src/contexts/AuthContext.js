@@ -5,7 +5,10 @@ import { doc, getDoc } from "firebase/firestore";
 import { 
   onAuthStateChanged, 
   signInWithEmailAndPassword, 
-  signOut 
+  signOut,
+  // 1. IMPORTAMOS O PROVEDOR DO GOOGLE E A FUNÇÃO DE POPUP
+  GoogleAuthProvider,
+  signInWithPopup
 } from "firebase/auth";
 
 const AuthContext = createContext();
@@ -22,6 +25,7 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   const login = async (email, password) => {
+    // ... (sua função de login com email/senha permanece igual)
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
     if (user) {
@@ -35,7 +39,26 @@ export function AuthProvider({ children }) {
   
   const logout = () => signOut(auth);
 
+  // --- 2. NOVA FUNÇÃO PARA LOGIN COM GOOGLE ---
+  const signInWithGoogle = async () => {
+    const provider = new GoogleAuthProvider();
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
+    if (user) {
+      const token = await user.getIdToken();
+      // Chama nosso backend para criar o perfil e definir o papel, se for um novo usuário
+      const response = await fetch('/.netlify/functions/handle-social-login', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      return { user, role: data.role }; // Retorna o papel que o backend confirmou
+    }
+    return null;
+  };
+  
   useEffect(() => {
+    // ... (seu useEffect do onAuthStateChanged permanece igual)
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
       if (user) {
@@ -71,12 +94,23 @@ export function AuthProvider({ children }) {
       }
       setLoading(false);
     });
-
     return unsubscribe;
   }, []);
 
+  const value = {
+    currentUser,
+    userRole,
+    subscriptionStatus,
+    planId,
+    loading,
+    login,
+    logout,
+    // 3. EXPORTAMOS A NOVA FUNÇÃO
+    signInWithGoogle
+  };
+
   return (
-    <AuthContext.Provider value={{ currentUser, userRole, subscriptionStatus, planId, loading, login, logout }}>
+    <AuthContext.Provider value={value}>
       {!loading && children}
     </AuthContext.Provider>
   );

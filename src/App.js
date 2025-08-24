@@ -3,7 +3,6 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 
-// --- SUAS IMPORTAÇÕES DE PÁGINA (sem alterações) ---
 import Navbar from './components/Navbar';
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import ShopOwnerDashboard from './pages/ShopOwnerDashboard';
@@ -17,8 +16,9 @@ import PlansPage from './pages/PlansPage';
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import HomePage from './pages/HomePage';
 import IndividualBarberDashboard from './pages/IndividualBarberDashboard';
+import ManageServicesPage from './pages/ManageServicesPage';
+import ManageBarbersPage from './pages/ManageBarbersPage';
 
-// --- COMPONENTES DE PROTEÇÃO DE ROTA (sem alterações) ---
 const PrivateRoute = ({ allowedRoles }) => {
   const { currentUser, userRole, loading } = useAuth();
   if (loading) return <h1>A carregar...</h1>;
@@ -52,7 +52,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route element={<Layout />}>
-          {/* Rotas Públicas (sem alterações) */}
+          {/* Rotas Públicas */}
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/agendar/:slug" element={<BookingPage />} />
@@ -60,26 +60,24 @@ function App() {
           <Route path="/payment-success" element={<PaymentSuccessPage />} />
           <Route path="/" element={<HomePage />} />
 
-          {/* --- ROTAS PROTEGIDAS --- */}
-
-          {/* Rota do Super Admin */}
+          {/* Rotas Protegidas */}
           <Route element={<PrivateRoute allowedRoles={['superAdmin']} />}>
             <Route path="/super-admin" element={<SuperAdminDashboard />} />
           </Route>
           
-          {/* ROTA DO DONO DA BARBEARIA (CORRIGIDA DE VOLTA PARA /dashboard) */}
           <Route element={<ShopOwnerProtectedRoute />}>
             <Route path="/dashboard" element={<ShopOwnerDashboard />} /> 
             <Route path="/dashboard/settings" element={<ShopSettingsPage />} />
+            {/* 2. ADICIONAMOS A NOVA ROTA DE SERVIÇOS */}
+            <Route path="/dashboard/services" element={<ManageServicesPage />} />
+            <Route path="/dashboard/barbers" element={<ManageBarbersPage />} />
           </Route>
           <Route path="/planos" element={<PlansPage />} />
 
-          {/* Rota do Barbeiro */}
           <Route element={<PrivateRoute allowedRoles={['barber']} />}>
             <Route path="/minha-agenda" element={<IndividualBarberDashboard />} />
           </Route>
 
-          {/* Rota do Cliente */}
           <Route element={<PrivateRoute allowedRoles={['client']} />}>
             <Route path="/meus-agendamentos" element={<ClientDashboard />} />
           </Route>

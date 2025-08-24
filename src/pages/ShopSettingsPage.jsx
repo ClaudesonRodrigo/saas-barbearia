@@ -8,18 +8,14 @@ import { Link } from 'react-router-dom';
 import styles from './ShopSettingsPage.module.scss';
 
 const ShopSettingsPage = () => {
-  // O estado agora começa como nulo e irá guardar o documento completo
   const [shopData, setShopData] = useState(null);
-  
   const [imageFile, setImageFile] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
-
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-
   const { currentUser } = useAuth();
 
   const fetchSettings = useCallback(async () => {
@@ -27,7 +23,7 @@ const ShopSettingsPage = () => {
     try {
       const token = await currentUser.getIdToken();
       const data = await getShopSettings(token);
-      setShopData(data); // Guardamos o documento completo
+      setShopData(data);
     } catch (err) {
       setError('Falha ao carregar as configurações.');
     } finally {
@@ -39,10 +35,8 @@ const ShopSettingsPage = () => {
     fetchSettings();
   }, [fetchSettings]);
 
-  // Função para lidar com alterações nos campos, incluindo os aninhados
   const handleChange = (e) => {
     const { name, value } = e.target;
-    
     if (name.includes('.')) {
       const [parentKey, childKey] = name.split('.');
       setShopData(prev => ({
@@ -67,6 +61,7 @@ const ShopSettingsPage = () => {
   };
 
   const handleImageUpload = async () => {
+
     if (!imageFile || !currentUser) return;
     setIsUploading(true);
     setError('');
@@ -92,7 +87,6 @@ const ShopSettingsPage = () => {
     setError('');
     try {
       const token = await currentUser.getIdToken();
-      // Enviamos o objeto completo para o back-end
       await updateShopSettings(shopData, token);
       setMessage('Configurações guardadas com sucesso!');
     } catch (err) {

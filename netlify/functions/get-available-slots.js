@@ -4,7 +4,6 @@ const { initializeApp, getApps, cert } = require('firebase-admin/app');
 const { getFirestore } = require('firebase-admin/firestore');
 const { fromZonedTime, toZonedTime, format } = require('date-fns-tz');
 
-// Inicialização do Firebase Admin
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 if (getApps().length === 0) {
   initializeApp({
@@ -14,7 +13,7 @@ if (getApps().length === 0) {
 const db = getFirestore();
 
 const TIME_ZONE = 'America/Sao_Paulo';
-const slotInterval = 30; // Intervalo de 30 minutos
+const slotInterval = 30;
 
 exports.handler = async function(event, context) {
   if (event.httpMethod !== 'GET') {
@@ -39,17 +38,16 @@ exports.handler = async function(event, context) {
 
     const dailyBusinessHours = {
       start: shopData.businessHours?.start || '09:00',
-      end: shopData.businessHours?.end || '22:00', // Exemplo de horário de fechamento
+      end: shopData.businessHours?.end || '22:00',
     };
     const lunchBreak = {
       start: shopData.lunchBreak?.start || '12:00',
       end: shopData.lunchBreak?.end || '13:00',
     };
 
-    const selectedDayStart = new Date(`${date}T00:00:00.000Z`);
-    const selectedDayEnd = new Date(`${date}T23:59:59.999Z`);
+    const selectedDayStart = fromZonedTime(`${date}T00:00:00`, TIME_ZONE);
+    const selectedDayEnd = fromZonedTime(`${date}T23:59:59`, TIME_ZONE);
 
-    // CORRIGIDO: Buscando na coleção principal 'schedules'
     const appointmentsQuery = db.collection('schedules')
       .where('barbershopId', '==', barbershopId)
       .where('barberId', '==', barberId)
