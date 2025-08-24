@@ -2,8 +2,7 @@
 
 const { initializeApp, getApps, cert } = require('firebase-admin/app');
 const { getFirestore } = require('firebase-admin/firestore');
-// 1. Importamos uma nova função auxiliar 'zonedTimeToUtc'
-const { toZonedTime, format, zonedTimeToUtc } = require('date-fns-tz');
+const { fromZonedTime, toZonedTime, format } = require('date-fns-tz');
 
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 if (getApps().length === 0) {
@@ -46,21 +45,8 @@ exports.handler = async function(event, context) {
       end: shopData.lunchBreak?.end || '13:00',
     };
 
-    // --- LÓGICA DE DATAS REFEITA PARA SER MAIS ROBUSTA ---
-    const [year, month, day] = date.split('-').map(Number);
-    const [startHour, startMinute] = dailyBusinessHours.start.split(':').map(Number);
-    const [endHour, endMinute] = dailyBusinessHours.end.split(':').map(Number);
-    const [lunchStartHour, lunchStartMinute] = lunchBreak.start.split(':').map(Number);
-    const [lunchEndHour, lunchEndMinute] = lunchBreak.end.split(':').map(Number);
-
-    // 2. Criamos as datas de forma explícita, sem ambiguidades
-    const selectedDayStart = zonedTimeToUtc(new Date(year, month - 1, day, 0, 0, 0), TIME_ZONE);
-    const selectedDayEnd = zonedTimeToUtc(new Date(year, month - 1, day, 23, 59, 59), TIME_ZONE);
-    let currentTime = zonedTimeToUtc(new Date(year, month - 1, day, startHour, startMinute, 0), TIME_ZONE);
-    let dayEnd = zonedTimeToUtc(new Date(year, month - 1, day, endHour, endMinute, 0), TIME_ZONE);
-    let lunchStart = zonedTimeToUtc(new Date(year, month - 1, day, lunchStartHour, lunchStartMinute, 0), TIME_ZONE);
-    let lunchEnd = zonedTimeToUtc(new Date(year, month - 1, day, lunchEndHour, lunchEndMinute, 0), TIME_ZONE);
-    // --- FIM DA LÓGICA DE DATAS REFEITA ---
+    const selectedDayStart = fromZonedTime(`${date}T00:00:00`, TIME_ZONE);
+    const selectedDayEnd = fromZonedTime(`${date}T23:59:59`, TIME_ZONE);
 
     const appointmentsQuery = db.collection('schedules')
       .where('barbershopId', '==', barbershopId)
@@ -79,8 +65,28 @@ exports.handler = async function(event, context) {
 
     const availableSlots = [];
     
+    const [startHour, startMinute] = dailyBusinessHours.start.split(':');
+    let currentTime = fromZonedTime(`${date}T${startHour}:${startMinute}:00`, TIME_ZONE);
+
+    const [endHour, endMinute] = dailyBusinessHours.end.split(':');
+    let dayEnd = fromZonedTime(`${date}T${endHour}:${endMinute}:00`, TIME_ZONE);
+
+    const [lunchStartHour, lunchStartMinute] = lunchBreak.start.split(':');
+    let lunchStart = fromZonedTime(`${date}T${lunchStartHour}:${lunchStartMinute}:00`, TIME_ZONE);
+
+    const [lunchEndHour, lunchEndMinute] = lunchBreak.end.split(':');
+    let lunchEnd = fromZonedTime(`${date}T${lunchEndHour}:${lunchEndMinute}:00`, TIME_ZONE);
+
     const now = toZonedTime(new Date(), TIME_ZONE);
     const isToday = format(now, 'yyyy-MM-dd') === date;
+
+    // --- LOGS DE DEPURAÇÃO ADICIONAIS ---
+    console.log('--- ANÁLISE DO FUSO HORÁRIO ---');
+    console.log('Horário de Fecho (dayEnd) interpretado como:', dayEnd.toString());
+    console.log('Horário de Fecho (dayEnd) em UTC:', dayEnd.toISOString());
+    console.log('Hora Atual (now) interpretada como:', now.toString());
+    console.log('---------------------------------');
+
 
     while (currentTime < dayEnd) {
       const slotStart = currentTime;
