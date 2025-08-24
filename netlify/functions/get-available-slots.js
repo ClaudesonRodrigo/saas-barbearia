@@ -13,7 +13,7 @@ if (getApps().length === 0) {
 const db = getFirestore();
 
 const TIME_ZONE = 'America/Sao_Paulo';
-const slotInterval = 30;
+const slotInterval = 30; // Intervalo de 30 minutos
 
 exports.handler = async function(event, context) {
   if (event.httpMethod !== 'GET') {
