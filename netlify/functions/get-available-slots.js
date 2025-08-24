@@ -45,7 +45,6 @@ exports.handler = async function(event, context) {
       end: shopData.lunchBreak?.end || '13:00',
     };
 
-    // --- LÓGICA DE DATAS USANDO fromZonedTime ---
     // Cria objetos de data que representam o início e o fim do dia NA NOSSA TIMEZONE
     const selectedDayStart = fromZonedTime(`${date}T00:00:00`, TIME_ZONE);
     const selectedDayEnd = fromZonedTime(`${date}T23:59:59`, TIME_ZONE);
